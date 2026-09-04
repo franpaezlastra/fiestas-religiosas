@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --color-azul-petroleo: #033e60;
+  --color-celeste-cielo: #0098d4;
+  --color-celeste-cielo-2: #0085d0;
+  --color-azul-logo: #415d82;
+  --color-texto: #616264;
+  --color-blanco: #ffffff;
+  --color-papel: #f7f3ec;
+  --color-naranja-libro: #d4762c;
+  --font-display: "Comfortaa", system-ui, sans-serif;
+  --font-body: "Alegreya Sans", system-ui, sans-serif;
+}
+
+html[data-display-font="baloo"] {
+  --font-display: "Baloo 2", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-texto);
+  background: var(--color-blanco);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-portadilla {
+  background: linear-gradient(180deg, #0098d4 0%, #0085d0 100%);
+}
+
+.caption-en {
+  font-style: italic;
+}
+
+.mapa-libre {
+  height: 520px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .mapa-libre {
+    height: 640px;
+  }
+}
+
+.map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #033e60;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-family: "Alegreya Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.map-pin.is-lg {
+  width: 28px;
+  height: 28px;
+}
+
+.map-pin.is-active {
+  border-color: #0098d4;
+  width: 28px;
+  height: 28px;
+}
+
+.map-pin.is-movil {
+  border-style: dashed;
+}
+
+.map-pin.is-pendiente {
+  background: transparent;
+  border-style: dashed;
+  border-color: #033e60;
+  color: #033e60;
+}
+
+.maplibregl-popup-content {
+  font-family: "Alegreya Sans", sans-serif;
+}

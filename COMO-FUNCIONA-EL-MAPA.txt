@@ -1,0 +1,215 @@
+CÓMO FUNCIONA EL MAPA — explicado para tontos
+============================================
+
+Idea de fondo
+-------------
+No usamos Google Maps. Google cobra y se rompe si no hay tarjeta / cuota
+(eso le pasó a fiestasreligiosas.com).
+
+Hoy el mapa es MapLibre (motor libre, como Mapbox pero sin pagar).
+El fondo (calles, provincias) lo sirve OpenFreeMap, que usa datos de
+OpenStreetMap. No hay API key ni factura.
+
+Los pines siguen saliendo de fiestas.json. El GPS de cada pueblo se
+usa DIRECTO: MapLibre ya entiende lat/lng, no hace falta la regla de 3
+del SVG.
+
+El dibujo SVG viejo (argentina-paths.json) ya no se muestra. Queda en
+el repo por si alguna vez se quiere volver al mapa ilustrado.
+
+
+Las 4 piezas
+------------
+1) La lista de fiestas
+   Archivo: src/data/fiestas.json
+   Son las 95 fiestas. Cada una tiene nombre, lugar, provincia, fecha,
+   tipo, y (si aplica) lat y lng.
+
+   lat = qué tan al norte/sur está (ej. Ushuaia más al sur = número más negativo)
+   lng = qué tan al este/oeste está (Argentina está en números negativos,
+         porque está al oeste del meridiano de Greenwich)
+
+   Tipos:
+   - fija      = un pueblo concreto, pin azul lleno
+   - movil     = fecha que cambia con Pascua, mismo pin pero borde punteado
+   - nacional  = “en todo el país”, SIN pin (San Roque, Navidad, etc.)
+   - pendiente = fiestas 83 a 95, todavía no fotografiadas, pin hueco punteado
+
+
+2) Cómo le pusimos lat/lng (se hizo UNA vez, no en cada visita)
+   Script: scripts/geocode.mjs
+
+   El JSON al principio tenía lat/lng en null.
+   El script mira los lugares ÚNICOS (Luján aparece 5 veces: una sola
+   consulta). Pregunta a Nominatim (OpenStreetMap, gratis):
+
+     “Luján, Buenos Aires, Argentina”  →  te devuelve -34.56, -59.11
+
+   Espera 1 segundo entre cada pregunta (regla de ellos).
+   Algunos pueblos chicos (Sumamao, Villa Silípica, Casabindo) Nominatim
+   no los encuentra bien: esos se cargaron a mano en el mismo script.
+
+   Después de correrlo, el JSON ya viaja con las coordenadas adentro.
+   El visitante de la web NUNCA llama a Nominatim.
+
+
+3) El contorno de Argentina (también se hizo UNA vez)
+   Script: scripts/generate_argentina.py
+   Resultado: src/data/argentina-paths.json
+
+   Pasos:
+   a) Bajamos un GeoJSON oficial del país (lista enorme de puntos
+      lat/lng que recorren la costa y las fronteras).
+   b) Nos quedamos con el polígono más grande = continente.
+      El segundo grande = Tierra del Fuego (si no, Ushuaia queda
+      flotando en el vacío).
+   c) “Simplificamos” el polígono: de miles de puntitos a unos pocos,
+      para que el SVG pese poco y se vea prolijo.
+   d) Convertimos cada puntito lat/lng a x/y de pantalla (ver más abajo)
+      y lo guardamos como un path SVG:
+
+        M183 73 L194 87 L202 71 ... Z
+
+      Eso es “arrancá acá, dibujá una línea hasta allá, y cerrá”.
+
+   En la web solo se pega ese path. No se baja el GeoJSON en runtime.
+
+
+4) La regla mágica: project()
+   Archivo: src/lib/geo.ts
+
+   El GPS habla en grados. El dibujo habla en píxeles.
+   Hay que traducir. Es una regla de 3, nada de magia.
+
+   Imaginá un rectángulo que envuelve a toda Argentina:
+
+     oeste  -73.56     este  -53.63     (longitud)
+     sur    -55.25     norte -21.78     (latitud)
+
+   El SVG mide 420 de ancho × 780 de alto, con un margen (pad) de 18.
+
+   Para un punto (lng, lat):
+
+     1. Miramos cuánto “entra” Argentina en el ancho y en el alto.
+        Usamos la escala MÁS CHICA de las dos, para que no se deforme
+        (si no, el país quedaría gordo o flaco).
+
+     2. Lo centramos en el rectángulo (offx, offy).
+
+     3. X = más al este = más a la derecha
+        x = offx + (lng - oeste) * escala
+
+     4. Y va AL REVÉS que la latitud.
+        En el mapa, el norte está ARRIBA.
+        En SVG, Y=0 está ARRIBA y crece hacia ABAJO.
+        Entonces: más al norte (lat más alta) = Y más chica.
+
+        y = offy + (norte - lat) * escala
+
+   ESTA MISMA función se usó para:
+   - dibujar el contorno (en el script de Python)
+   - ubicar cada pin (en React)
+
+   Si usaras otra fórmula para los pines, se irían al océano.
+
+
+Qué pasa cuando abrís /mapa
+---------------------------
+Página: src/pages/Mapa.tsx
+
+Hay UNA sola variable compartida:
+
+  fiestaActiva = null, un id, o varios ids (si el pin agrupa varias fiestas)
+
+El mapa, la lista de la derecha y el calendario LEEN y ESCRIBEN eso.
+Por eso si tocás “Luján” en el calendario, se prende el pin,
+y si tocás el pin, se prende la fila de la lista.
+
+
+Filtros (antes de dibujar, no con CSS)
+--------------------------------------
+En MapaFiestas hay 4 filtros: buscador, región, tipo, mes.
+
+Se recorre el array y se tira lo que no coincide.
+Recién DESPUÉS se dibujan pines y filas.
+Ocultar con CSS dejaría pines invisibles pero clickeables: mal.
+
+
+Agrupar pines (clustering)
+--------------------------
+Archivo: src/lib/geo.ts  →  clusterFiestas()
+
+Problema: Luján tiene 5 fiestas en la MISMA esquina.
+Si dibujás 5 circulitos, se tapan.
+
+Solución de pobre (y suficiente):
+  redondeamos lat/lng a 3 decimales (~100 metros)
+  y juntamos las que caen en la misma llavecita.
+
+Un pin con número “5” = hay 5 fiestas ahí.
+El clic abre el detalle con las 5, no una sola.
+
+
+Fiestas “en todo el país”
+-------------------------
+No tienen un pueblo. No las forzamos a un pin mentiroso
+(tipo “las pongo en el medio del país”).
+
+Van arriba, en chips naranjas, como en el libro.
+Clic = se abre el detalle igual.
+
+
+Cómo se ve cada pin
+-------------------
+- fija       círculo azul petróleo, relleno, borde blanco
+- movil      igual pero borde punteado
+- pendiente  sin relleno, borde punteado (las 13 que faltan visitar)
+- activo     más grande, borde celeste
+- agrupado   el circulito más grande y el número adentro
+
+
+Celular vs computadora
+----------------------
+Computadora: mapa a la izquierda, lista + detalle a la derecha.
+
+Celular: mapa arriba a lo ancho.
+Al tocar un pin se abre una bandeja desde ABAJO (bottom sheet),
+no un cartel en el medio que tapa todo.
+Eso importa porque la gente llega con el QR desde el celu.
+
+
+Calendario
+----------
+Es la misma lista, ordenada por mes (como la página 30 del libro).
+Al tocar una fiesta:
+  1) se guarda su id en fiestaActiva
+  2) la página scrollea hasta el mapa
+  3) el pin se prende
+
+Las 13 “próximas a visitar” van en un bloque aparte, naranja.
+
+
+Si querés cambiar algo, por dónde entrar
+----------------------------------------
+- Sumar / editar una fiesta ........ src/data/fiestas.json
+- Corregir un pueblo mal ubicado ... el lat/lng de esa fiesta en el JSON
+                                     (o agregar un MANUAL en scripts/geocode.mjs
+                                     y volver a correr: node scripts/geocode.mjs)
+- El dibujo de Argentina ........... no lo toques a mano.
+                                     Si hace falta: python scripts/generate_argentina.py
+- Cómo se ve / se filtra ........... src/components/MapaFiestas.tsx
+- La cuenta de “grados → píxeles” .. src/lib/geo.ts  (project)
+- El estado compartido ............. src/pages/Mapa.tsx
+
+
+Analogía final
+--------------
+1. Tenemos una foto recortada de Argentina (el SVG).
+2. Tenemos una planilla de Excel con pueblos y GPS (el JSON).
+3. Una regla de 3 convierte GPS en “a cuántos píxeles de la esquina
+   de arriba a la izquierda va el circulito”.
+4. Un cuaderno (fiestaActiva) anota qué fiesta está elegida,
+   y mapa + lista + calendario miran ese cuaderno.
+
+No hay API paga. No hay mapa de Google. No hay backend.
+Es un dibujo + una lista + una cuenta.
