@@ -4,9 +4,9 @@ export function SeccionAutor() {
   return (
     <section>
       <Portadilla id="autor" titulo="El autor y los editores" kicker="The author and the editors" />
-      <div className="mx-auto max-w-3xl px-4 py-10 md:py-14">
-        <h3 className="font-display text-2xl text-azul-petroleo">Federico Lanati</h3>
-        <div className="mt-4 space-y-4 font-light leading-relaxed">
+      <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
+        <h3 className="subtitulo-seccion">Federico Lanati</h3>
+        <div className="reveal-scroll mt-5 space-y-5 font-light leading-relaxed">
           <p>
             Federico Lanati nació en 1960 y vive en Tucumán, Argentina. Abogado, empresario del
             rubro hotelero gastronómico y concesionario automotor. Luego de su paso por la música y
@@ -44,8 +44,8 @@ export function SeccionAutor() {
           <p>Reflejar la fe en Argentina a través de la religiosidad popular es su motivación principal como fotógrafo.</p>
         </div>
 
-        <h3 className="mt-14 font-display text-2xl text-azul-petroleo">Gustavo Tarchini</h3>
-        <p className="mt-4 font-light leading-relaxed">
+        <h3 className="subtitulo-seccion mt-16">Gustavo Tarchini</h3>
+        <p className="reveal-scroll mt-5 font-light leading-relaxed">
           Gustavo Tarchini fue un destacado fotógrafo santiagueño (1965–2025), docente y gestor
           cultural argentino, considerado un referente esencial de la fotografía documental de su
           provincia. Su obra se centró en capturar la identidad santiagueña, explorando distintos
@@ -57,8 +57,8 @@ export function SeccionAutor() {
           Volmaro, su hijo Francisco y su nieta Guillermina.
         </p>
 
-        <h3 className="mt-14 font-display text-2xl text-azul-petroleo">Juan Travnik</h3>
-        <p className="mt-4 font-light leading-relaxed">
+        <h3 className="subtitulo-seccion mt-16">Juan Travnik</h3>
+        <p className="reveal-scroll mt-5 font-light leading-relaxed">
           Juan Travnik nació en Argentina en 1950. Fotógrafo, docente y curador. Miembro de número
           de la Academia Nacional de Bellas Artes, creó y dirigió la licenciatura en Fotografía de
           la Universidad Nacional de San Martín desde 2016 hasta 2025. Dirigió también la

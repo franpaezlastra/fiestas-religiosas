@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import fiestasData from "../data/fiestas.json" with { type: "json" };
-import { capituloLabel, clusterFiestas } from "../lib/geo";
-import type { Cluster, Fiesta, FiestaActiva, TipoFiesta } from "../lib/types";
+import { ESTILO_FISICO_POLITICO } from "../lib/estiloMapa";
+import { capituloLabel, clusterFiestas, pinesSeparados } from "../lib/geo";
+import type { Fiesta, FiestaActiva, TipoFiesta } from "../lib/types";
+import { Boton } from "./Boton";
 
 const FIESTAS = fiestasData as Fiesta[];
-const STYLE = "https://tiles.openfreemap.org/styles/positron";
 const ARG_MAX_BOUNDS: [[number, number], [number, number]] = [
-  [-78, -58],
-  [-48, -18],
+  [-88, -62],
+  [-40, -12],
 ];
 
 const REGIONES = ["todas", ...[...new Set(FIESTAS.map((f) => f.region))]];
@@ -66,7 +67,7 @@ function Detalle({ fiestas, onPick }: { fiestas: Fiesta[]; onPick: (id: number) 
       {fiestas.map((f) => {
         const cap = capituloLabel(f.capitulo);
         return (
-          <li key={f.id} className="border border-azul-logo/30 p-3">
+          <li key={f.id} className="card-hover border border-azul-logo/30 p-3">
             <button type="button" className="w-full text-left" onClick={() => onPick(f.id)}>
               <p className="font-display text-lg text-azul-petroleo">
                 <span className="mr-2 font-body text-sm">{String(f.id).padStart(2, "0")}</span>
@@ -107,23 +108,19 @@ function Detalle({ fiestas, onPick }: { fiestas: Fiesta[]; onPick: (id: number) 
 }
 
 function Pin({
-  cluster,
-  active,
+  fiesta,
+  abierto,
   onClick,
 }: {
-  cluster: Cluster;
-  active: boolean;
+  fiesta: Fiesta;
+  abierto: boolean;
   onClick: () => void;
 }) {
-  const pendiente = cluster.fiestas.every((f) => f.tipo === "pendiente");
-  const movil = cluster.fiestas.every((f) => f.tipo === "movil") && !pendiente;
-  const count = cluster.fiestas.length;
   const cls = [
     "map-pin",
-    count > 1 ? "is-lg" : "",
-    active ? "is-active" : "",
-    movil ? "is-movil" : "",
-    pendiente ? "is-pendiente" : "",
+    abierto ? "is-open" : "",
+    fiesta.tipo === "movil" ? "is-movil" : "",
+    fiesta.tipo === "pendiente" ? "is-pendiente" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -132,10 +129,20 @@ function Pin({
     <button
       type="button"
       className={cls}
-      onClick={onClick}
-      aria-label={cluster.fiestas.map((f) => f.nombre).join(", ")}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={`${fiesta.id}. ${fiesta.nombre}`}
     >
-      {count > 1 ? count : ""}
+      {fiesta.id}
+      <span className="map-pin-tip">
+        <strong>
+          {fiesta.id}. {fiesta.nombre}
+        </strong>
+        {fiesta.lugar}
+        {fiesta.fecha ? ` · ${fiesta.fecha}` : ""}
+      </span>
     </button>
   );
 }
@@ -162,7 +169,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
     [region, tipo, mes, q],
   );
   const nacionales = filtradas.filter((f) => f.tipo === "nacional");
-  const clusters = useMemo(() => clusterFiestas(filtradas), [filtradas]);
+  const pines = useMemo(() => pinesSeparados(clusterFiestas(filtradas)), [filtradas]);
   const activaIds = idsDe(fiestaActiva);
   const detalle = FIESTAS.filter((f) => activaIds.includes(f.id));
 
@@ -178,9 +185,8 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
     });
   }, [fiestaActiva]);
 
-  function clickCluster(c: Cluster) {
-    const ids = c.fiestas.map((f) => f.id);
-    onActiva(ids.length === 1 ? ids[0] : ids);
+  function clickPin(f: Fiesta) {
+    onActiva(fiestaActiva === f.id ? null : f.id);
     setSheet(true);
   }
 
@@ -195,12 +201,12 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
         [-73.6, -55.3],
         [-53.5, -21.7],
       ],
-      { padding: 40, duration: 800 },
+      { padding: 100, duration: 800, maxZoom: 3.2 },
     );
   }
 
   return (
-    <div className="bg-blanco px-4 py-8 md:py-12">
+    <div className="bg-blanco px-4 py-12 md:py-20">
       <div className="mx-auto max-w-6xl">
         <p className="max-w-3xl font-light leading-relaxed">
           95 celebraciones relevadas por Federico Lanati. Las 82 primeras están fotografiadas en el
@@ -217,10 +223,8 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
                   key={f.id}
                   type="button"
                   onClick={() => clickLista(f)}
-                  className={`shrink-0 border px-3 py-2 text-left text-sm ${
-                    activaIds.includes(f.id)
-                      ? "border-naranja-libro bg-papel text-azul-petroleo"
-                      : "border-naranja-libro/50"
+                  className={`filtro-chip shrink-0 text-left text-sm ${
+                    activaIds.includes(f.id) ? "is-on" : ""
                   }`}
                 >
                   <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-naranja-libro text-[11px] text-blanco">
@@ -292,32 +296,40 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
             <div className="mapa-libre relative">
               <Map
                 ref={mapRef}
-                mapStyle={STYLE}
-                initialViewState={{ longitude: -64.8, latitude: -40.2, zoom: 3.5 }}
+                mapStyle={ESTILO_FISICO_POLITICO}
+                initialViewState={{ longitude: -64.8, latitude: -38.5, zoom: 3 }}
                 maxBounds={ARG_MAX_BOUNDS}
                 cooperativeGestures
                 attributionControl
                 style={{ width: "100%", height: "100%" }}
                 onLoad={verArgentina}
+                onClick={() => onActiva(null)}
               >
                 <NavigationControl position="top-right" showCompass={false} />
-                {clusters.map((c) => (
-                  <Marker key={c.key} longitude={c.lng} latitude={c.lat} anchor="center">
+                {pines.map((p) => (
+                  <Marker
+                    key={p.fiesta.id}
+                    longitude={p.lng}
+                    latitude={p.lat}
+                    anchor="center"
+                    offset={p.offset}
+                  >
                     <Pin
-                      cluster={c}
-                      active={c.fiestas.some((f) => activaIds.includes(f.id))}
-                      onClick={() => clickCluster(c)}
+                      fiesta={p.fiesta}
+                      abierto={activaIds.includes(p.fiesta.id)}
+                      onClick={() => clickPin(p.fiesta)}
                     />
                   </Marker>
                 ))}
               </Map>
-              <button
-                type="button"
+              <Boton
+                variante="secundario"
+                tamano="sm"
+                className="absolute bottom-8 left-2"
                 onClick={verArgentina}
-                className="absolute bottom-8 left-2 bg-blanco px-3 py-1.5 text-xs text-azul-petroleo"
               >
                 Ver todo el país
-              </button>
+              </Boton>
             </div>
             <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
               <li className="flex items-center gap-1.5">
@@ -352,8 +364,8 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
                       <button
                         type="button"
                         onClick={() => clickLista(f)}
-                        className={`flex w-full items-start gap-3 px-3 py-2 text-left ${
-                          active ? "bg-papel" : ""
+                        className={`ctrl-fila flex w-full items-start gap-3 px-3 py-2 text-left ${
+                          active ? "is-on" : ""
                         }`}
                       >
                         <span
@@ -400,9 +412,9 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
           <div className="absolute inset-x-0 bottom-0 max-h-[72vh] overflow-y-auto border-t-4 border-azul-petroleo bg-blanco px-4 py-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="font-display text-azul-petroleo">Detalle</p>
-              <button type="button" className="text-sm" onClick={() => setSheet(false)}>
+              <Boton variante="secundario" tamano="sm" onClick={() => setSheet(false)}>
                 Cerrar
-              </button>
+              </Boton>
             </div>
             <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} />
           </div>

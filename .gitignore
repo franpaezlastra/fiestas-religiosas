@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# PDF del libro (interiores en baja). No va al repo ni al deploy.
+*.pdf
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

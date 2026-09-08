@@ -39,9 +39,9 @@ export function Calendario({ fiestaActiva, onActiva }: Props) {
   }
 
   return (
-    <div id="calendario" className="scroll-mt-14 bg-blanco px-4 py-10 md:py-14">
+    <div id="calendario" className="scroll-mt-16 bg-blanco px-4 py-12 md:py-20">
       <div className="mx-auto max-w-6xl">
-        <h3 className="font-display text-2xl text-azul-petroleo md:text-3xl">
+        <h3 className="titulo-seccion text-[1.75rem] md:text-[2rem]">
           Calendario de las fiestas populares
         </h3>
         <p className="caption-en mt-1 text-sm">
@@ -73,8 +73,8 @@ export function Calendario({ fiestaActiva, onActiva }: Props) {
                         <button
                           type="button"
                           onClick={() => elegir(f.id)}
-                          className={`flex w-full items-start gap-2 text-left text-sm ${
-                            active ? "bg-papel" : ""
+                          className={`ctrl-fila flex w-full items-start gap-2 text-left text-sm ${
+                            active ? "is-on" : ""
                           }`}
                         >
                           <span className="w-7 shrink-0 pt-0.5 font-medium text-azul-logo">{dia}</span>
@@ -116,8 +116,8 @@ export function Calendario({ fiestaActiva, onActiva }: Props) {
                   <button
                     type="button"
                     onClick={() => elegir(f.id)}
-                    className={`flex w-full items-start gap-2 text-left text-sm ${
-                      activaIds.includes(f.id) ? "bg-papel" : ""
+                    className={`ctrl-fila flex w-full items-start gap-2 text-left text-sm ${
+                      activaIds.includes(f.id) ? "is-on" : ""
                     }`}
                   >
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-azul-petroleo text-[11px] text-blanco">
@@ -152,8 +152,8 @@ export function Calendario({ fiestaActiva, onActiva }: Props) {
                   <button
                     type="button"
                     onClick={() => elegir(f.id)}
-                    className={`flex w-full items-start gap-2 text-left text-sm ${
-                      activaIds.includes(f.id) ? "bg-papel" : ""
+                    className={`ctrl-fila flex w-full items-start gap-2 text-left text-sm ${
+                      activaIds.includes(f.id) ? "is-on" : ""
                     }`}
                   >
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-naranja-libro text-[11px] text-naranja-libro">

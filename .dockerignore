@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+*.pdf
+*.md
+ESTADO_PROYECTO.txt
+COMO-FUNCIONA-EL-MAPA.txt
+scripts
+agent-transcripts

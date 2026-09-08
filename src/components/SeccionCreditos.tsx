@@ -5,54 +5,31 @@ export function SeccionCreditos() {
   return (
     <section>
       <Portadilla id="creditos" titulo="Créditos" kicker="Credits" />
-      <div className="mx-auto max-w-3xl px-4 py-10 md:py-14">
-        <dl className="space-y-3 text-sm leading-relaxed md:text-base">
-          <div>
-            <dt className="font-medium text-azul-petroleo">Idea, edición general y fotografías</dt>
-            <dd>Federico Lanati</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Editores</dt>
-            <dd>Juan Travnik y Gustavo Tarchini</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Corrección de estilo (español)</dt>
-            <dd>Magena Valentié</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Diseño</dt>
-            <dd>Estudio Massolo — Fabio Massolo</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Infografías</dt>
-            <dd>Daniel Fontanarrosa</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Ilustración</dt>
-            <dd>Alfredo Sabat</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Fotocromía</dt>
-            <dd>Estudio Ricardo Farías</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Impresión</dt>
-            <dd>Akian Gráfica Editora</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Traducción al inglés</dt>
-            <dd>Florencia Paz</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-azul-petroleo">Revisión general</dt>
-            <dd>Valeria Cangemi</dd>
-          </div>
+      <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
+        <dl className="divide-y divide-azul-logo/15 leading-relaxed">
+          {[
+            ["Idea, edición general y fotografías", "Federico Lanati"],
+            ["Editores", "Juan Travnik y Gustavo Tarchini"],
+            ["Corrección de estilo (español)", "Magena Valentié"],
+            ["Diseño", "Estudio Massolo — Fabio Massolo"],
+            ["Infografías", "Daniel Fontanarrosa"],
+            ["Ilustración", "Alfredo Sabat"],
+            ["Fotocromía", "Estudio Ricardo Farías"],
+            ["Impresión", "Akian Gráfica Editora"],
+            ["Traducción al inglés", "Florencia Paz"],
+            ["Revisión general", "Valeria Cangemi"],
+          ].map(([cargo, nombre]) => (
+            <div key={cargo} className="reveal-scroll py-4">
+              <dt className="font-medium text-azul-petroleo">{cargo}</dt>
+              <dd>{nombre}</dd>
+            </div>
+          ))}
         </dl>
 
         <p className="mt-8 font-light">Edición bilingüe. Tirada: 1000 ejemplares.</p>
 
-        <h3 className="mt-12 font-display text-xl text-azul-petroleo">Agradecimientos — Colaboradores</h3>
-        <p className="mt-3 font-light leading-relaxed">
+        <h3 className="subtitulo-seccion mt-16">Agradecimientos — Colaboradores</h3>
+        <p className="reveal-scroll mt-5 font-light leading-relaxed">
           Milagros Lanati, Florencia Lanati, Patricio Castellanos, Sebastián Robles Terán, Máximo
           Méndez, Giuliana Moisés, María Antonia Schanton, Padre obispo Juan Carlos Romanín,
           Monseñor Lucio Ruiz, Padre Lucas Salcedo, Padre Guillermo Benzi, Marcela Villares, Gerardo
@@ -72,8 +49,8 @@ export function SeccionCreditos() {
           25.446.
         </p>
 
-        <h3 className="mt-12 font-display text-xl text-azul-petroleo">Ficha catalográfica</h3>
-        <p className="mt-3 text-sm font-light leading-relaxed">
+        <h3 className="subtitulo-seccion mt-16">Ficha catalográfica</h3>
+        <p className="reveal-scroll mt-5 text-sm font-light leading-relaxed">
           Lanati, Federico. Peregrinos: 80 fiestas populares argentinas / Federico Lanati;
           Contribuciones de Marcelo Colombo... [et al.]; Editado por Juan Travnik; Gustavo Tarchini;
           Fotografías de Federico Lanati; Ilustrado por Alfredo Sabat; Prólogo de Cardenal Ángel
@@ -94,17 +71,18 @@ export function SeccionTapa() {
         titulo="Tapa, contratapa e ISBN"
         kicker="Cover, back cover and ISBN"
       />
-      <div className="mx-auto max-w-3xl px-4 py-10 md:py-14">
+      <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
         <p className="font-light leading-relaxed">
           ISBN 978-631-01-7027-5. La foto de tapa es la Virgen del Valle en Catamarca, cada 8 de
           diciembre.
         </p>
-        <figure className="mt-8">
-          <img
-            src="/images/tapa-tipografica.jpg"
-            alt="Página de título tipográfica del libro Peregrinos"
-            className="mx-auto w-full max-w-xl"
-          />
+        <figure className="mt-10">
+          <div className="foto-libro mx-auto max-w-xl aspect-[3/4]">
+            <img
+              src="/images/tapa-tipografica.jpg"
+              alt="Página de título tipográfica del libro Peregrinos"
+            />
+          </div>
           <figcaption className="mt-2 text-sm">
             Página de título del interior. La tapa ilustrada con la foto de la Virgen del Valle no
             forma parte de este PDF de interiores.

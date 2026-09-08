@@ -2,15 +2,10 @@ import { Link } from "react-router-dom";
 import { NAV_LIBRO, NAV_PRINCIPAL } from "../lib/nav";
 import { Logo } from "./Logo";
 
-type Props = {
-  displayFont: "comfortaa" | "baloo";
-  onDisplayFont: (font: "comfortaa" | "baloo") => void;
-};
-
-export function Footer({ displayFont, onDisplayFont }: Props) {
+export function Footer() {
   return (
     <footer className="bg-black text-blanco">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-3 md:py-16">
         <div>
           <Logo size="foot" />
           <p className="mt-3 text-sm font-light">Peregrinos. 80 fiestas populares argentinas</p>
@@ -22,7 +17,7 @@ export function Footer({ displayFont, onDisplayFont }: Props) {
           <ul className="mt-3 flex flex-col gap-2">
             {NAV_PRINCIPAL.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="hover:text-celeste-cielo">
+                <Link to={l.to} className="transition-colors duration-200 hover:text-celeste-cielo">
                   {l.label}
                 </Link>
               </li>
@@ -34,34 +29,15 @@ export function Footer({ displayFont, onDisplayFont }: Props) {
           <ul className="mt-3 flex flex-col gap-2">
             {NAV_LIBRO.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="hover:text-celeste-cielo">
+                <Link to={l.to} className="transition-colors duration-200 hover:text-celeste-cielo">
                   {l.label}
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
-        <div className="text-sm">
-          <p className="font-medium">Edición bilingüe</p>
+          <p className="mt-6 font-medium">Edición bilingüe</p>
           <p className="mt-1 font-light">Español / English · 1000 ejemplares</p>
           <p className="mt-3 font-light">Editores: Juan Travnik y Gustavo Tarchini</p>
-          <p className="mt-4 font-medium">Tipografía de títulos</p>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              className={`border px-3 py-1 ${displayFont === "comfortaa" ? "border-blanco bg-blanco text-black" : "border-blanco/50"}`}
-              onClick={() => onDisplayFont("comfortaa")}
-            >
-              Comfortaa
-            </button>
-            <button
-              type="button"
-              className={`border px-3 py-1 ${displayFont === "baloo" ? "border-blanco bg-blanco text-black" : "border-blanco/50"}`}
-              onClick={() => onDisplayFont("baloo")}
-            >
-              Baloo 2
-            </button>
-          </div>
         </div>
       </div>
       <p className="border-t border-blanco/15 px-4 py-4 text-center text-xs font-light">

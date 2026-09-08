@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 
 export function Layout() {
   const { pathname } = useLocation();
-  const [displayFont, setDisplayFont] = useState<"comfortaa" | "baloo">("comfortaa");
-
-  useEffect(() => {
-    document.documentElement.dataset.displayFont = displayFont;
-  }, [displayFont]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,10 +13,10 @@ export function Layout() {
   return (
     <div className="flex min-h-svh flex-col bg-blanco">
       <Header />
-      <main className="flex-1">
+      <main className={`flex-1 ${pathname === "/" ? "" : "pt-[5.5rem]"}`}>
         <Outlet />
       </main>
-      <Footer displayFont={displayFont} onDisplayFont={setDisplayFont} />
+      <Footer />
     </div>
   );
 }

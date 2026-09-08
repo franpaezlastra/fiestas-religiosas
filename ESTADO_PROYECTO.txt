@@ -1,0 +1,97 @@
+ESTADO DEL PROYECTO — 7 septiembre 2026 (tarde)
+Peregrinos. 80 Fiestas Populares Argentinas — web
+Revisión corta post-modernización. Para Fran + Claude.
+
+========================================
+RESUELTO EN ESTA RONDA
+========================================
+
+1. 404 al refrescar rutas (SPA)
+   nginx.conf con try_files $uri $uri/ /index.html;
+   Dockerfile: build Node 22 → nginx 1.27 sirviendo dist/.
+   .dockerignore excluye PDF, node_modules, scripts, md de estado.
+   Falta confirmarlo en Dokploy (el archivo está; el deploy todavía no se hizo acá).
+
+2. PDF fuera del repo/deploy
+   *.pdf en .gitignore.
+   git rm --cached de "Peregrinos final en baja.pdf" (queda en el disco local, no en el índice).
+   Confirmado: no entra a dist/ ni al contexto Docker.
+
+3. Limpieza de assets
+   Sacados restos Vite: vite.svg, typescript.svg, hero.png, public/icons.svg.
+   Sacadas de public/images/ las fotos duplicadas que no usa ningún componente
+   (incluye timeline-bergoglio-argentina.jpg y timeline-papado.jpg).
+   Quedan en dist/ solo las 5 JPEG en uso + 10 PNG de la línea de tiempo de /francisco
+   + logo.webp + favicon.svg.
+
+4. Tipografía
+   Baloo 2 es la única fuente de títulos. Comfortaa salió de Google Fonts y del footer.
+   No hay toggle para el usuario.
+   Escala en CSS: .titulo-seccion (~40–56px), .subtitulo-seccion (~20–24px),
+   cuerpo Alegreya Sans ~16–17px / line-height 1.6–1.65, .caption-en 13px itálica #616264.
+
+5. Navbar
+   Fixed. En Inicio: transparente sobre el hero hasta scrollY > 40, luego blanco (~200ms).
+   Páginas internas: blanco desde el tope (el contenido no es foto a sangre).
+   Menú mobile abre en blanco (legible desde QR).
+
+6. /santos sin mapa
+   Sin MapLibre. Quedó: ilustración Sabat + foto mapa-santos-beatos.jpg + 16 fichas
+   de santos.ts, con reveal al scrollear. El mapa interactivo vive solo en /mapa.
+
+7. Pasada visual (vara: /francisco)
+   Reveal con animation-timeline: view() en escritores, créditos, santos, home;
+   fallback estático si el navegador no soporta; prefers-reduced-motion apaga motion.
+   Hover de tarjetas/filas/chips: translateY(-2px) ~160–180ms + borde/sombra.
+   Fotos en .foto-libro (object-fit cover, proporción fija, overlay suave).
+   Más aire en créditos, escritores, autor, shop/pendientes.
+   Calendario y lista del mapa usan el mismo lenguaje activo que los filtros
+   (borde celeste/naranja + inset).
+   Mobile: body 16px, padding de header fixed, portadillas clamp.
+
+Build local: tsc + vite build OK. El PDF no está en dist/.
+
+
+========================================
+NO RESUELTO / PENDIENTE DE CLIENTE
+========================================
+
+- Deploy real a Dokploy: hay que buildear con el Dockerfile y probar refresh en
+  /mapa, /francisco, /santos, etc. Hasta que eso no corra en el servidor, el 404
+  de producción no está verificado.
+
+- Archivos de imprenta en alta: las fotos siguen siendo recortes del PDF en baja.
+  Overlay y recorte disimulan; no reemplazan originales.
+
+- Contenido que el libro no trae (igual que antes):
+  shop/Amazon + entrega nacional
+  video YouTube
+  Instagram / Facebook
+  foto entrega al papa León XIV
+  “tres argentinos más famosos” (confirmar terna)
+  CV de Alfredo Sabat
+  bios extensas de los 17 escritores
+  prosa extra de Bergoglio en Argentina (el homenaje del libro es visual)
+
+- Testing mobile en dispositivo real / QR: esta ronda ajustó CSS y el menú;
+  no hubo pasada en celular físico ni en browser de Cursor.
+
+- El PDF sigue en la carpeta del proyecto (solo local). Borrarlo del disco
+  si no lo necesitan a mano.
+
+- MapLibre sigue en un chunk grande (~786 kB). No bloquea; code-split de /mapa
+  se puede dejar para después del primer deploy.
+
+
+========================================
+CÓMO REVISAR
+========================================
+
+npm run dev
+  /          hero + nav transparente → blanco al scrollear
+  /mapa      único mapa interactivo + calendario
+  /santos    foto Sabat + infografía + fichas; SIN pines
+  /francisco línea de tiempo (referencia visual)
+  /escritores /creditos /autor  aire + reveal
+
+Refresh de /mapa en local con Vite no prueba el nginx; eso es el Dockerfile.

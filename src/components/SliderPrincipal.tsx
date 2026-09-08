@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Boton } from "./Boton";
 
 const SLIDES = [
   {
@@ -13,39 +13,30 @@ export function SliderPrincipal() {
   const slide = SLIDES[0];
 
   return (
-    <section className="bg-black">
-      <div className="relative h-[62vh] min-h-[320px] md:h-[78vh]">
+    <section className="relative bg-papel">
+      <div id="hero-inicio" className="relative min-h-[100svh]">
         <img
           src={slide.src}
           alt={slide.alt}
-          className="h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-cover object-[center_42%]"
         />
-      </div>
-      <div className="bg-azul-petroleo px-4 py-6 text-center text-blanco md:py-8">
-        <h1 className="font-display text-3xl tracking-[0.16em] md:text-5xl">PEREGRINOS</h1>
-        <p className="mt-2 font-display text-sm tracking-[0.1em] text-celeste-cielo md:text-base">
-          80 FIESTAS POPULARES ARGENTINAS
-        </p>
-        <p className="caption-en mt-1 text-sm text-blanco/80">
-          PILGRIMS. 80 Popular Festivities in Argentina
-        </p>
-        <p className="mt-3 text-sm font-light">Federico Lanati · ISBN 978-631-01-7027-5</p>
-        <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            to="/mapa"
-            className="bg-celeste-cielo px-6 py-3 font-body text-sm font-medium text-blanco"
-          >
-            Ver el mapa de fiestas
-          </Link>
-          <Link
-            to="/shop"
-            className="border border-blanco px-6 py-3 font-body text-sm font-medium text-blanco"
-          >
-            Comprar el libro
-          </Link>
+        <div className="pointer-events-none absolute inset-0 bg-black/50" />
+        <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center px-4 text-center">
+          <h1 className="font-display text-4xl leading-[1.2] tracking-[0.14em] text-azul-petroleo md:text-6xl">
+            PEREGRINOS
+          </h1>
+          <p className="mt-2 font-display text-sm tracking-[0.1em] text-blanco md:text-lg">
+            80 FIESTAS POPULARES ARGENTINAS
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Boton to="/mapa">Ver el mapa de fiestas</Boton>
+            <Boton to="/shop" variante="secundario">
+              Comprar el libro
+            </Boton>
+          </div>
         </div>
       </div>
-      <p className="bg-blanco px-4 py-3 text-center text-sm">
+      <p className="bg-blanco px-4 py-4 text-center text-sm">
         {slide.pie}
         <span className="caption-en block">{slide.pieEn}</span>
       </p>

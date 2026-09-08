@@ -48,8 +48,8 @@ export const NAV_LIBRO: NavItem[] = [
   {
     to: "/tres-argentinos",
     label: "Tres argentinos",
-    kicker: "Pendiente",
-    resumen: "Sección pedida por el autor; el contenido todavía no llegó.",
+    kicker: "Folleto",
+    resumen: "Maradona, Francisco y Messi, como en el folleto del libro.",
   },
   {
     to: "/video",
