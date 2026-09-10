@@ -8,12 +8,11 @@ export function SeccionSantos() {
       <Portadilla id="santos" titulo="Santos y beatos" kicker="Saints and blesseds in Argentina" />
       <div className="mx-auto max-w-6xl px-4 py-12 md:py-20">
         <figure>
-          <div className="foto-libro bg-papel [&_img]:h-auto [&_img]:object-contain">
-            <img
-              src="/images/santos-grupo.jpg"
-              alt="Retratos de santos y beatos en Argentina, ilustración del folleto"
-            />
-          </div>
+          <img
+            src="/images/santos-grupo-removebg-preview.png"
+            alt="Retratos de santos y beatos en Argentina, ilustración del folleto"
+            className="mx-auto w-full"
+          />
           <figcaption className="mt-3 text-sm">
             Santos y beatos en Argentina. Los números coinciden con el mapa y las fichas.
             <span className="caption-en block">
