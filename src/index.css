@@ -222,38 +222,171 @@ select:focus-visible {
   color: #ffffff;
 }
 
-.map-pin-tip {
+.map-pin-wrap {
+  position: relative;
+}
+
+.map-pin-card {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 10px);
   left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 220px;
-  padding: 8px 10px;
-  background: #033e60;
-  color: #ffffff;
-  font-family: "Alegreya Sans", sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.3;
+  z-index: 6;
+  width: 240px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #616264;
+  box-shadow: 0 12px 32px rgb(3 62 96 / 0.22);
   text-align: left;
-  pointer-events: none;
+  pointer-events: auto;
   visibility: hidden;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  transition:
+    visibility 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
-.map-pin-tip strong {
-  display: block;
-  font-weight: 700;
-}
-
-.map-pin:hover .map-pin-tip,
-.map-pin.is-open .map-pin-tip {
+.map-pin-wrap:hover .map-pin-card,
+.map-pin-wrap.is-open .map-pin-card {
   visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
-.maplibregl-marker:has(.map-pin:hover),
-.maplibregl-marker:has(.map-pin.is-open) {
+.map-pin-card img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background: #f7f3ec;
+}
+
+.map-pin-card-cuerpo {
+  padding: 10px 12px 12px;
+}
+
+.map-pin-card-cuerpo strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #033e60;
+}
+
+.map-pin-card-cuerpo p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.map-pin-card .ver-galeria {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0098d4;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.map-pin-card .ver-galeria:hover {
+  color: #033e60;
+}
+
+.maplibregl-marker:has(.map-pin-wrap:hover),
+.maplibregl-marker:has(.map-pin-wrap.is-open) {
   z-index: 20 !important;
+}
+
+.galeria-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 4.5rem 2.5rem;
+}
+
+.galeria-modal-fondo {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.88);
+  cursor: pointer;
+}
+
+.galeria-modal-cerrar,
+.galeria-modal-flecha {
+  position: absolute;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.galeria-modal-cerrar {
+  top: 1rem;
+  right: 1.1rem;
+  font-size: 2.4rem;
+  font-weight: 300;
+}
+
+.galeria-modal-flecha {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 3rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.galeria-modal-flecha.is-izq {
+  left: 0.4rem;
+}
+
+.galeria-modal-flecha.is-der {
+  right: 0.4rem;
+}
+
+.galeria-modal-foto {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  max-width: min(920px, 100%);
+  max-height: 100%;
+}
+
+.galeria-modal-foto img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 7.5rem);
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.galeria-modal-foto figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.detalle-fiesta img {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: #f7f3ec;
 }
 
 .linea-tiempo {

@@ -4,8 +4,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import fiestasData from "../data/fiestas.json" with { type: "json" };
 import { ESTILO_FISICO_POLITICO } from "../lib/estiloMapa";
 import { capituloLabel, clusterFiestas, pinesSeparados } from "../lib/geo";
+import { fotoPortada, fotosDe } from "../lib/galeria";
 import type { Fiesta, FiestaActiva, TipoFiesta } from "../lib/types";
 import { Boton } from "./Boton";
+import { GaleriaModal } from "./GaleriaModal";
 
 const FIESTAS = fiestasData as Fiesta[];
 const ARG_MAX_BOUNDS: [[number, number], [number, number]] = [
@@ -54,7 +56,15 @@ function coincide(f: Fiesta, region: string, tipo: string, mes: string, q: strin
   return true;
 }
 
-function Detalle({ fiestas, onPick }: { fiestas: Fiesta[]; onPick: (id: number) => void }) {
+function Detalle({
+  fiestas,
+  onPick,
+  onGaleria,
+}: {
+  fiestas: Fiesta[];
+  onPick: (id: number) => void;
+  onGaleria: (fiesta: Fiesta) => void;
+}) {
   if (!fiestas.length) {
     return (
       <p className="text-sm">
@@ -66,26 +76,44 @@ function Detalle({ fiestas, onPick }: { fiestas: Fiesta[]; onPick: (id: number) 
     <ul className="flex flex-col gap-3">
       {fiestas.map((f) => {
         const cap = capituloLabel(f.capitulo);
+        const portada = fotoPortada(f.id);
+        const hayGaleria = fotosDe(f.id).length > 0;
         return (
-          <li key={f.id} className="card-hover border border-azul-logo/30 p-3">
-            <button type="button" className="w-full text-left" onClick={() => onPick(f.id)}>
-              <p className="font-display text-lg text-azul-petroleo">
-                <span className="mr-2 font-body text-sm">{String(f.id).padStart(2, "0")}</span>
-                {f.nombre}
-              </p>
-              <p className="mt-1 text-sm">
-                {f.lugar}
-                {f.provincia && f.lugar !== f.provincia ? `, ${f.provincia}` : ""}
-              </p>
-              {f.fecha ? <p className="mt-1 text-sm">{f.fecha}</p> : null}
-              <div className="mt-2 flex flex-wrap gap-2">
+          <li key={f.id} className="detalle-fiesta overflow-hidden border border-azul-logo/30">
+            {portada ? (
+              <button type="button" className="block w-full" onClick={() => onGaleria(f)}>
+                <img src={portada} alt="" />
+              </button>
+            ) : null}
+            <div className="p-3">
+              <button type="button" className="w-full text-left" onClick={() => onPick(f.id)}>
+                <p className="font-display text-lg text-azul-petroleo">
+                  <span className="mr-2 font-body text-sm">{String(f.id).padStart(2, "0")}</span>
+                  {f.nombre}
+                </p>
+                <p className="mt-1 text-sm">
+                  {f.lugar}
+                  {f.provincia && f.lugar !== f.provincia ? `, ${f.provincia}` : ""}
+                </p>
+                {f.fecha ? <p className="mt-1 text-sm">{f.fecha}</p> : null}
+              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {cap ? (
                   <span className="bg-azul-petroleo px-2 py-0.5 text-xs text-blanco">{cap}</span>
                 ) : null}
-                {f.paginas ? (
-                  <span className="border border-azul-logo px-2 py-0.5 text-xs">
-                    Ver en el libro, pág. {f.paginas}
+                {f.tipo === "movil" ? (
+                  <span className="border border-dashed border-azul-petroleo px-2 py-0.5 text-xs">
+                    Fiesta móvil
                   </span>
+                ) : null}
+                {hayGaleria ? (
+                  <button
+                    type="button"
+                    className="text-xs font-medium uppercase tracking-wide text-celeste-cielo"
+                    onClick={() => onGaleria(f)}
+                  >
+                    Ver galería
+                  </button>
                 ) : f.enLibro ? (
                   <span className="border border-azul-logo px-2 py-0.5 text-xs">En el libro</span>
                 ) : (
@@ -93,13 +121,8 @@ function Detalle({ fiestas, onPick }: { fiestas: Fiesta[]; onPick: (id: number) 
                     Próximamente
                   </span>
                 )}
-                {f.tipo === "movil" ? (
-                  <span className="border border-dashed border-azul-petroleo px-2 py-0.5 text-xs">
-                    Fiesta móvil
-                  </span>
-                ) : null}
               </div>
-            </button>
+            </div>
           </li>
         );
       })}
@@ -111,10 +134,12 @@ function Pin({
   fiesta,
   abierto,
   onClick,
+  onGaleria,
 }: {
   fiesta: Fiesta;
   abierto: boolean;
   onClick: () => void;
+  onGaleria: (fiesta: Fiesta) => void;
 }) {
   const cls = [
     "map-pin",
@@ -124,26 +149,48 @@ function Pin({
   ]
     .filter(Boolean)
     .join(" ");
+  const portada = fotoPortada(fiesta.id);
+  const hayGaleria = fotosDe(fiesta.id).length > 0;
 
   return (
-    <button
-      type="button"
-      className={cls}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      aria-label={`${fiesta.id}. ${fiesta.nombre}`}
-    >
-      {fiesta.id}
-      <span className="map-pin-tip">
-        <strong>
-          {fiesta.id}. {fiesta.nombre}
-        </strong>
-        {fiesta.lugar}
-        {fiesta.fecha ? ` · ${fiesta.fecha}` : ""}
-      </span>
-    </button>
+    <div className={`map-pin-wrap${abierto ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className={cls}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        aria-label={`${fiesta.id}. ${fiesta.nombre}`}
+      >
+        {fiesta.id}
+      </button>
+      <div className="map-pin-card">
+        {portada ? <img src={portada} alt="" /> : null}
+        <div className="map-pin-card-cuerpo">
+          <strong>
+            {fiesta.id}. {fiesta.nombre}
+          </strong>
+          <p>
+            {fiesta.lugar}
+            {fiesta.provincia && fiesta.lugar !== fiesta.provincia ? ` / ${fiesta.provincia}` : ""}
+          </p>
+          {fiesta.fecha ? <p>{fiesta.fecha}</p> : null}
+          {hayGaleria ? (
+            <button
+              type="button"
+              className="ver-galeria"
+              onClick={(e) => {
+                e.stopPropagation();
+                onGaleria(fiesta);
+              }}
+            >
+              Ver galería
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -159,6 +206,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
   const [mes, setMes] = useState("todos");
   const [q, setQ] = useState("");
   const [sheet, setSheet] = useState(false);
+  const [galeria, setGaleria] = useState<Fiesta | null>(null);
 
   useEffect(() => {
     if (fiestaActiva != null) setSheet(true);
@@ -318,6 +366,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
                       fiesta={p.fiesta}
                       abierto={activaIds.includes(p.fiesta.id)}
                       onClick={() => clickPin(p.fiesta)}
+                      onGaleria={setGaleria}
                     />
                   </Marker>
                 ))}
@@ -395,7 +444,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
               </ul>
             </div>
             <div className="hidden flex-1 overflow-y-auto border-t border-azul-logo/20 p-3 lg:block">
-              <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} />
+              <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} onGaleria={setGaleria} />
             </div>
           </div>
         </div>
@@ -416,10 +465,17 @@ export function MapaFiestas({ fiestaActiva, onActiva }: Props) {
                 Cerrar
               </Boton>
             </div>
-            <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} />
+            <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} onGaleria={setGaleria} />
           </div>
         </div>
       ) : null}
+
+      <GaleriaModal
+        abierta={galeria != null}
+        titulo={galeria ? `${galeria.id}. ${galeria.nombre}` : ""}
+        fotos={galeria ? fotosDe(galeria.id) : []}
+        onCerrar={() => setGaleria(null)}
+      />
     </div>
   );
 }

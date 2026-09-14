@@ -10,7 +10,7 @@
     "mes": 1,
     "tipo": "fija",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "185",
     "lat": -27.6495962,
     "lng": -67.0263616,
     "enLibro": true
@@ -26,7 +26,7 @@
     "mes": 1,
     "tipo": "fija",
     "capitulo": 10,
-    "paginas": "",
+    "paginas": "274-275-276-277-278-279",
     "lat": -29.1835645,
     "lng": -58.0799951,
     "enLibro": true
@@ -42,7 +42,7 @@
     "mes": 1,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "148-150-176",
     "lat": -38.9519679,
     "lng": -68.0591741,
     "enLibro": true
@@ -58,7 +58,7 @@
     "mes": 1,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "76-77",
     "lat": -37.9976168,
     "lng": -57.5482079,
     "enLibro": true
@@ -74,7 +74,7 @@
     "mes": 1,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "175",
     "lat": -39.9508663,
     "lng": -71.0708883,
     "enLibro": true
@@ -90,7 +90,7 @@
     "mes": 2,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "114-115",
     "lat": -25.5753402,
     "lng": -66.4556335,
     "enLibro": true
@@ -106,7 +106,7 @@
     "mes": 2,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "119",
     "lat": -26.6945749,
     "lng": -66.0480813,
     "enLibro": true
@@ -122,7 +122,7 @@
     "mes": 2,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "144-145-156-157",
     "lat": -28.1167,
     "lng": -64.3833,
     "enLibro": true
@@ -138,7 +138,7 @@
     "mes": 2,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "108-109",
     "lat": -26.234855,
     "lng": -65.4949155,
     "enLibro": true
@@ -154,7 +154,7 @@
     "mes": 2,
     "tipo": "movil",
     "capitulo": 10,
-    "paginas": "",
+    "paginas": "256-284-285-286-287",
     "lat": -23.304,
     "lng": -65.356,
     "enLibro": true
@@ -170,7 +170,7 @@
     "mes": 2,
     "tipo": "movil",
     "capitulo": 10,
-    "paginas": "",
+    "paginas": "263-280-281",
     "lat": -26.5936769,
     "lng": -65.9200311,
     "enLibro": true
@@ -186,7 +186,7 @@
     "mes": 3,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "149-150-222-223",
     "lat": -28.1167,
     "lng": -64.3833,
     "enLibro": true
@@ -202,7 +202,7 @@
     "mes": 3,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "144-152-153-154-155",
     "lat": -31.7058,
     "lng": -65.0189,
     "enLibro": true
@@ -218,7 +218,7 @@
     "mes": 3,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "164-165",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -234,7 +234,7 @@
     "mes": null,
     "tipo": "nacional",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "210-213",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -250,7 +250,7 @@
     "mes": 4,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "180",
     "lat": -26.8303703,
     "lng": -65.2038133,
     "enLibro": true
@@ -266,7 +266,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "186-187-189",
     "lat": -23.8575495,
     "lng": -65.4670199,
     "enLibro": true
@@ -282,7 +282,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "188-190-191-191-192",
     "lat": -23.5769014,
     "lng": -65.393396,
     "enLibro": true
@@ -298,7 +298,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "193",
     "lat": -23.439,
     "lng": -65.351,
     "enLibro": true
@@ -314,7 +314,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "194-195-196-197",
     "lat": -22.129,
     "lng": -65.464,
     "enLibro": true
@@ -330,7 +330,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "198",
     "lat": -25.7995047,
     "lng": -66.0721546,
     "enLibro": true
@@ -346,7 +346,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "71",
     "lat": -28.5828054,
     "lng": -66.7924096,
     "enLibro": true
@@ -362,7 +362,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "204-205",
     "lat": -26.8519744,
     "lng": -65.710812,
     "enLibro": true
@@ -378,7 +378,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "201",
     "lat": -26.0729166,
     "lng": -65.9760315,
     "enLibro": true
@@ -394,7 +394,7 @@
     "mes": 4,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "200",
     "lat": -23.5769014,
     "lng": -65.393396,
     "enLibro": true
@@ -410,7 +410,7 @@
     "mes": null,
     "tipo": "fija",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "162-182-202-203",
     "lat": -39.9508663,
     "lng": -71.0708883,
     "enLibro": true
@@ -426,7 +426,7 @@
     "mes": 4,
     "tipo": "fija",
     "capitulo": "homenaje",
-    "paginas": "",
+    "paginas": "12 a 29",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -442,7 +442,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "72",
     "lat": -33.201,
     "lng": -63.862,
     "enLibro": true
@@ -458,7 +458,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "70-181",
     "lat": -23.304,
     "lng": -65.356,
     "enLibro": true
@@ -474,7 +474,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "73-74-75",
     "lat": -33.3,
     "lng": -66.2833,
     "enLibro": true
@@ -490,7 +490,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "68-69",
     "lat": -32.7667,
     "lng": -65.3667,
     "enLibro": true
@@ -506,7 +506,7 @@
     "mes": 5,
     "tipo": "movil",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "123",
     "lat": -31.6474914,
     "lng": -60.6428557,
     "enLibro": true
@@ -522,7 +522,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 3,
-    "paginas": "",
+    "paginas": "81-82-83-84-85",
     "lat": -34.5661734,
     "lng": -59.1152598,
     "enLibro": true
@@ -538,7 +538,7 @@
     "mes": 5,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "62-63-64",
     "lat": -28.4833,
     "lng": -63.2833,
     "enLibro": true
@@ -554,7 +554,7 @@
     "mes": 6,
     "tipo": "movil",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "208-209",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -570,7 +570,7 @@
     "mes": 5,
     "tipo": "movil",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "65",
     "lat": -24.9035452,
     "lng": -65.4871792,
     "enLibro": true
@@ -586,7 +586,7 @@
     "mes": 6,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "215-226-227",
     "lat": -26.8303703,
     "lng": -65.2038133,
     "enLibro": true
@@ -602,7 +602,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "232-233",
     "lat": -26.8303703,
     "lng": -65.2038133,
     "enLibro": true
@@ -618,7 +618,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "110-111",
     "lat": -27.2690228,
     "lng": -58.242766,
     "enLibro": true
@@ -634,7 +634,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "112-113",
     "lat": -26.8519744,
     "lng": -65.710812,
     "enLibro": true
@@ -650,7 +650,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "148-150-177",
     "lat": -29.4127411,
     "lng": -66.8558795,
     "enLibro": true
@@ -666,7 +666,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "168-169",
     "lat": -26.2333,
     "lng": -65.2833,
     "enLibro": true
@@ -682,7 +682,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "104-105-106-107",
     "lat": -27.55,
     "lng": -64.85,
     "enLibro": true
@@ -698,7 +698,7 @@
     "mes": 7,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "166-167",
     "lat": -27.7700082,
     "lng": -65.5883539,
     "enLibro": true
@@ -714,7 +714,7 @@
     "mes": 8,
     "tipo": "fija",
     "capitulo": 10,
-    "paginas": "",
+    "paginas": "282-283",
     "lat": -26.5936769,
     "lng": -65.9200311,
     "enLibro": true
@@ -730,7 +730,7 @@
     "mes": 8,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "170-171-172-173",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -762,7 +762,7 @@
     "mes": 8,
     "tipo": "nacional",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "168",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -778,7 +778,7 @@
     "mes": 8,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "148-150-158-159-160-161",
     "lat": -39.1654039,
     "lng": -66.146388,
     "enLibro": true
@@ -794,7 +794,7 @@
     "mes": 8,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "149-151-174",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -810,7 +810,7 @@
     "mes": 8,
     "tipo": "fija",
     "capitulo": 1,
-    "paginas": "",
+    "paginas": "48-49",
     "lat": -24.45,
     "lng": -65.95,
     "enLibro": true
@@ -826,7 +826,7 @@
     "mes": 8,
     "tipo": "movil",
     "capitulo": 3,
-    "paginas": "",
+    "paginas": "79-90-91",
     "lat": -34.5661734,
     "lng": -59.1152598,
     "enLibro": true
@@ -842,7 +842,7 @@
     "mes": 9,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "149-150-218-219",
     "lat": -28.39,
     "lng": -65.77,
     "enLibro": true
@@ -858,7 +858,7 @@
     "mes": 9,
     "tipo": "fija",
     "capitulo": 5,
-    "paginas": "",
+    "paginas": "137-138-139",
     "lat": -32.8894155,
     "lng": -68.8446177,
     "enLibro": true
@@ -874,7 +874,7 @@
     "mes": 9,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "56-60-61",
     "lat": -24.7892946,
     "lng": -65.4103194,
     "enLibro": true
@@ -890,7 +890,7 @@
     "mes": 9,
     "tipo": "nacional",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "179",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -906,7 +906,7 @@
     "mes": 9,
     "tipo": "fija",
     "capitulo": 5,
-    "paginas": "",
+    "paginas": "128-130-131-134-135-136",
     "lat": -26.8303703,
     "lng": -65.2038133,
     "enLibro": true
@@ -922,7 +922,7 @@
     "mes": 9,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "214-216-217",
     "lat": -33.3277089,
     "lng": -60.2165909,
     "enLibro": true
@@ -938,7 +938,7 @@
     "mes": 9,
     "tipo": "movil",
     "capitulo": 3,
-    "paginas": "",
+    "paginas": "79-86-87",
     "lat": -34.5661734,
     "lng": -59.1152598,
     "enLibro": true
@@ -954,7 +954,7 @@
     "mes": 10,
     "tipo": "fija",
     "capitulo": 1,
-    "paginas": "",
+    "paginas": "33-38-39-40-41",
     "lat": -22.792256,
     "lng": -65.216523,
     "enLibro": true
@@ -970,7 +970,7 @@
     "mes": 10,
     "tipo": "fija",
     "capitulo": 1,
-    "paginas": "",
+    "paginas": "42-43",
     "lat": -24.1852569,
     "lng": -65.2994789,
     "enLibro": true
@@ -986,7 +986,7 @@
     "mes": 10,
     "tipo": "movil",
     "capitulo": 10,
-    "paginas": "",
+    "paginas": "266 a 273",
     "lat": -31.737991,
     "lng": -67.9864718,
     "enLibro": true
@@ -1002,7 +1002,7 @@
     "mes": 10,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "224-225",
     "lat": -26.0729166,
     "lng": -65.9760315,
     "enLibro": true
@@ -1018,7 +1018,7 @@
     "mes": 10,
     "tipo": "nacional",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "178",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -1034,7 +1034,7 @@
     "mes": 10,
     "tipo": "movil",
     "capitulo": 3,
-    "paginas": "",
+    "paginas": "88-89-228",
     "lat": -34.5661734,
     "lng": -59.1152598,
     "enLibro": true
@@ -1050,7 +1050,7 @@
     "mes": 11,
     "tipo": "nacional",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "206-207",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -1066,7 +1066,7 @@
     "mes": 11,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "116",
     "lat": -41.1334781,
     "lng": -71.3101474,
     "enLibro": true
@@ -1082,7 +1082,7 @@
     "mes": 11,
     "tipo": "fija",
     "capitulo": 2,
-    "paginas": "",
+    "paginas": "66-67",
     "lat": -26.8303703,
     "lng": -65.2038133,
     "enLibro": true
@@ -1098,7 +1098,7 @@
     "mes": 11,
     "tipo": "fija",
     "capitulo": 6,
-    "paginas": "",
+    "paginas": "149-150-162-163",
     "lat": -40.8084274,
     "lng": -62.994722,
     "enLibro": true
@@ -1114,7 +1114,7 @@
     "mes": 11,
     "tipo": "fija",
     "capitulo": 3,
-    "paginas": "",
+    "paginas": "92-93",
     "lat": -29.3830617,
     "lng": -63.4728569,
     "enLibro": true
@@ -1130,7 +1130,7 @@
     "mes": 11,
     "tipo": "movil",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "117",
     "lat": -26.9333,
     "lng": -65.7,
     "enLibro": true
@@ -1146,7 +1146,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "124-125-126-127",
     "lat": -24.7892946,
     "lng": -65.4103194,
     "enLibro": true
@@ -1162,7 +1162,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "100-101-102-103",
     "lat": -28.4688806,
     "lng": -65.7790642,
     "enLibro": true
@@ -1178,7 +1178,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "234-235",
     "lat": -28.4688806,
     "lng": -65.7790642,
     "enLibro": true
@@ -1194,7 +1194,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "230-231",
     "lat": -26.8667,
     "lng": -65.35,
     "enLibro": true
@@ -1210,7 +1210,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "122",
     "lat": -27.3459249,
     "lng": -65.5927221,
     "enLibro": true
@@ -1226,7 +1226,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "224",
     "lat": -34.6095579,
     "lng": -58.3887904,
     "enLibro": true
@@ -1242,7 +1242,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 4,
-    "paginas": "",
+    "paginas": "120-121",
     "lat": -28.3011532,
     "lng": -64.1840358,
     "enLibro": true
@@ -1258,7 +1258,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 8,
-    "paginas": "",
+    "paginas": "148-151-229",
     "lat": -34.5661734,
     "lng": -59.1152598,
     "enLibro": true
@@ -1274,7 +1274,7 @@
     "mes": 12,
     "tipo": "nacional",
     "capitulo": 7,
-    "paginas": "",
+    "paginas": "183-185",
     "lat": null,
     "lng": null,
     "enLibro": true
@@ -1290,7 +1290,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 1,
-    "paginas": "",
+    "paginas": "44-45-46-47",
     "lat": -27.9833,
     "lng": -64.2167,
     "enLibro": true
@@ -1306,7 +1306,7 @@
     "mes": 12,
     "tipo": "fija",
     "capitulo": 1,
-    "paginas": "",
+    "paginas": "54-55",
     "lat": -29.4127411,
     "lng": -66.8558795,
     "enLibro": true
