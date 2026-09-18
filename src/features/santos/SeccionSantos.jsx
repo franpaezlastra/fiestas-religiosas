@@ -1,8 +1,13 @@
-import { SANTOS_BEATOS } from "../../data/santos";
+import { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { selectSantosForUi } from "../../utils/peopleAdapter";
 
 export function SeccionSantos() {
+  const publicItems = useSelector((s) => s.people.publicItems);
+  const santos = useMemo(() => selectSantosForUi(publicItems), [publicItems]);
+
   return (
     <section>
       <Portadilla id="santos" titulo="Santos y beatos" kicker="Saints and blesseds in Argentina" />
@@ -11,8 +16,8 @@ export function SeccionSantos() {
           <img
             src="/images/santos-grupo-removebg-preview.png"
             alt="Retratos de santos y beatos en Argentina, ilustración del folleto"
-            className="mx-auto w-full" />
-          
+            className="mx-auto w-full"
+          />
           <figcaption className="mt-3 text-sm">
             Santos y beatos en Argentina. Los números coinciden con el mapa y las fichas.
             <span className="caption-en block">
@@ -26,8 +31,8 @@ export function SeccionSantos() {
             <img
               src="/images/mapa-santos.png"
               alt="Mapa de Argentina con la ubicación numerada de santos y beatos"
-              className="mx-auto w-full max-w-xs lg:max-w-none" />
-            
+              className="mx-auto w-full max-w-xs lg:max-w-none"
+            />
             <p className="mt-3 text-center text-sm">
               Mapa de referencia. Cada número señala una ficha.
               <span className="caption-en block">Reference map. Each number matches a profile.</span>
@@ -35,28 +40,28 @@ export function SeccionSantos() {
           </aside>
 
           <ol>
-            {SANTOS_BEATOS.map((s) =>
-            <li
-              key={s.id}
-              className="reveal-scroll mb-7 border-b border-azul-logo/15 pb-6 last:mb-0 last:border-b-0">
-              
+            {santos.map((s) => (
+              <li
+                key={s.apiId || s.id}
+                className="reveal-scroll mb-7 border-b border-azul-logo/15 pb-6 last:mb-0 last:border-b-0"
+              >
                 <p className="font-medium text-azul-petroleo">
                   <span
-                  className={`mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                  s.categoria === "santo" ?
-                  "bg-azul-petroleo text-blanco" :
-                  s.categoria === "siervo" ?
-                  "border border-dashed border-azul-petroleo text-azul-petroleo" :
-                  "bg-[#c4a574] text-blanco"}`
-                  }>
-                  
+                    className={`mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                      s.categoria === "santo"
+                        ? "bg-azul-petroleo text-blanco"
+                        : s.categoria === "siervo"
+                          ? "border border-dashed border-azul-petroleo text-azul-petroleo"
+                          : "bg-[#c4a574] text-blanco"
+                    }`}
+                  >
                     {s.id}
                   </span>
                   {s.nombre} <span className="font-light">({s.anios})</span>
                 </p>
                 <p className="mt-2 text-sm font-light leading-relaxed">{s.bio}</p>
               </li>
-            )}
+            ))}
           </ol>
         </div>
 
@@ -75,6 +80,6 @@ export function SeccionSantos() {
           </Pendiente>
         </div>
       </div>
-    </section>);
-
+    </section>
+  );
 }

@@ -8,19 +8,20 @@ export function paginasGaleria(id) {
 
 /** Fotos locales del libro (páginas escaneadas), fallback si no hay media en API */
 export function fotosLocalesDe(id) {
+  if (id == null || id === "") return [];
   return paginasGaleria(id).map((p) => `/images/galeria/p${String(p).padStart(3, "0")}.jpg`);
 }
 
 /**
  * Preferí fotos del API (Cloudinary) cuando la fiesta las trae;
- * si no, cae a galería local por id.
+ * si no, cae a galería local por número de libro (`numero`), no por uuid.
  */
 export function fotosDe(fiestaOrId) {
   if (fiestaOrId && typeof fiestaOrId === "object") {
     if (Array.isArray(fiestaOrId.fotos) && fiestaOrId.fotos.length > 0) {
       return fiestaOrId.fotos;
     }
-    return fotosLocalesDe(fiestaOrId.id);
+    return fotosLocalesDe(fiestaOrId.numero ?? fiestaOrId.id);
   }
   return fotosLocalesDe(fiestaOrId);
 }

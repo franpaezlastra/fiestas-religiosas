@@ -1,6 +1,18 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { timelinesService } from "../../services";
 
+export const fetchPublicTimelines = createAsyncThunk(
+  "timelines/fetchPublic",
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await timelinesService.publicList();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      return rejectWithValue({ message: error.message });
+    }
+  },
+);
+
 export const fetchAdminTimelines = createAsyncThunk(
   "timelines/fetchAdmin",
   async (_, { rejectWithValue }) => {
@@ -48,10 +60,22 @@ export const archiveTimeline = createAsyncThunk(
 
 const timelinesSlice = createSlice({
   name: "timelines",
-  initialState: { adminItems: [], status: "idle", error: null },
+  initialState: { publicItems: [], adminItems: [], status: "idle", error: null },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(fetchPublicTimelines.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(fetchPublicTimelines.fulfilled, (state, action) => {
+        state.publicItems = action.payload;
+        state.status = "succeeded";
+      })
+      .addCase(fetchPublicTimelines.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload?.message || "Error al cargar timelines";
+      })
       .addCase(fetchAdminTimelines.fulfilled, (state, action) => {
         state.adminItems = action.payload;
         state.status = "succeeded";

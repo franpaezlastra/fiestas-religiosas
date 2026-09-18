@@ -60,8 +60,6 @@ export function Header() {
             "Santos" :
             l.to === "/autor" ?
             "Autor" :
-            l.to === "/shop" ?
-            "Comprar" :
             l.label}
             </NavLink>
           )}

@@ -10,6 +10,12 @@ export function parseLegacyId(shortDescription) {
   return m ? Number(m[1]) : null;
 }
 
+/** Número visible en pin/lista (libro). La identidad React es `id`. */
+export function fiestaNumero(f) {
+  if (f?.numero != null && f.numero !== "") return f.numero;
+  return f?.id;
+}
+
 function translationOf(item) {
   return (
     item?.translation ||
@@ -44,6 +50,23 @@ function mediaUrl(image) {
   return null;
 }
 
+/** Lista pública puede traer `primaryImage` o `images[]` según deploy. */
+export function celebrationImageUrls(item) {
+  const raw =
+    Array.isArray(item?.images) && item.images.length > 0
+      ? item.images
+      : item?.primaryImage
+        ? [item.primaryImage]
+        : [];
+  return [...raw]
+    .sort((a, b) => {
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+      return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+    })
+    .map(mediaUrl)
+    .filter(Boolean);
+}
+
 function tipoFromSchedule(schedule, local) {
   if (local?.tipo) return local.tipo;
   const t = schedule?.scheduleType;
@@ -73,7 +96,7 @@ function fechaIsoFromSchedule(schedule, local) {
 
 /**
  * Convierte una celebración pública del API al shape del mapa/calendario.
- * Conserva region/capitulo/enLibro/paginas desde fiestas.json cuando hay legacyId.
+ * `id` = uuid API (clave única). `numero` = número de libro / displayOrder.
  */
 export function celebrationToFiesta(item) {
   const tr = translationOf(item);
@@ -82,17 +105,18 @@ export function celebrationToFiesta(item) {
   const legacyId = parseLegacyId(tr?.shortDescription);
   const local = legacyId != null ? localById.get(legacyId) : null;
 
-  const sortedImages = [...(item.images || [])].sort((a, b) => {
-    if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
-    return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-  });
-  const fotos = sortedImages.map(mediaUrl).filter(Boolean);
+  const fotos = celebrationImageUrls(item);
 
-  const id = legacyId ?? local?.id ?? item.displayOrder ?? item.id;
+  const numero =
+    legacyId ??
+    (typeof item.displayOrder === "number" ? item.displayOrder : null) ??
+    local?.id ??
+    null;
 
   return {
-    id,
+    id: item.id,
     apiId: item.id,
+    numero,
     nombre: tr?.name || local?.nombre || "Sin nombre",
     lugar: item.locality || item.placeName || local?.lugar || "",
     provincia: item.province?.name || local?.provincia || "",
@@ -112,28 +136,27 @@ export function celebrationToFiesta(item) {
   };
 }
 
-function sortByLegacyId(a, b) {
-  const na = Number(a.id);
-  const nb = Number(b.id);
-  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+function sortByNumero(a, b) {
+  const na = Number(a.numero);
+  const nb = Number(b.numero);
+  if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+  if (Number.isFinite(na) && !Number.isFinite(nb)) return -1;
+  if (!Number.isFinite(na) && Number.isFinite(nb)) return 1;
   return String(a.nombre).localeCompare(String(b.nombre), "es");
 }
 
 /**
  * Datos del mapa/calendario.
- * Prioridad: API pública (`GET /public/celebrations`). El mock local solo si la API
- * viene vacía o falló. No usamos `/admin/celebrations` acá (requiere sesión).
+ * Prioridad: API pública. Mock local solo si la API viene vacía o falló.
  */
 export function selectFiestasForUi({ publicItems, localItems, source }) {
   if (Array.isArray(publicItems) && publicItems.length > 0) {
-    return publicItems
-      .map(celebrationToFiesta)
-      .filter((f) => typeof f.id === "number" || /^\d+$/.test(String(f.id)))
-      .sort(sortByLegacyId);
+    return publicItems.map(celebrationToFiesta).sort(sortByNumero);
   }
   if (source === "api") return [];
   return (localItems || localFiestas).map((f) => ({
     ...f,
+    numero: f.id,
     fotos: null,
     apiId: null,
     source: "local",

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Boton } from "../../components/ui/Boton";
 import { celebrationsService } from "../../services";
 import {
   archiveCelebration,
@@ -11,19 +10,29 @@ import {
 import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { fetchProvinces } from "../../redux/slices/provincesSlice";
 import { slugify } from "../../utils/slugify";
+import { useAdminPagination } from "../hooks/useAdminPagination";
+import { AdminButton } from "../components/AdminButton";
+import { useAdminConfirm } from "../components/AdminConfirm";
+import { useAdminToast } from "../components/AdminToast";
+import { AdminModal, AdminModalActions } from "../components/AdminModal";
+import { AdminSortableList, nextDisplayOrder } from "../components/AdminSortableList";
+import { mediaUrl, thumbUrl } from "../utils/mediaUrl";
 import {
   AdminAlert,
   AdminBadge,
   AdminCheckbox,
   AdminField,
+  AdminIconButton,
   AdminInput,
   AdminPageHeader,
-  AdminPanel,
+  AdminPagination,
   AdminSearch,
   AdminSection,
   AdminSelect,
+  AdminStatCard,
   AdminTable,
   AdminTextarea,
+  AdminToolbar,
 } from "../components/AdminForm";
 
 const MESES = [
@@ -74,17 +83,70 @@ function provinceName(item) {
   return item.province?.name || "—";
 }
 
+function scheduleLabel(item) {
+  const s = item.schedules?.[0];
+  const t = s?.translations?.find((x) => x.locale === "es") || s?.translations?.[0];
+  return t?.dateDescription || "—";
+}
+
+function imageCaption(img) {
+  const tr = img.translations?.find((t) => t.locale === "es") || img.translations?.[0];
+  return tr?.caption || "";
+}
+
+function formFromDetail(detail) {
+  const tr = detail.translations?.find((t) => t.locale === "es") || detail.translations?.[0];
+  const schedule = detail.schedules?.[0];
+  const scheduleTr =
+    schedule?.translations?.find((t) => t.locale === "es") || schedule?.translations?.[0];
+  const primary = detail.images?.find((img) => img.isPrimary) || detail.images?.[0];
+  return {
+    name: tr?.name || "",
+    slug: tr?.slug || "",
+    shortDescription: tr?.shortDescription || "",
+    locality: detail.locality || "",
+    placeName: detail.placeName || "",
+    provinceId: detail.provinceId || "",
+    latitude: detail.latitude != null ? String(Number(detail.latitude)) : "",
+    longitude: detail.longitude != null ? String(Number(detail.longitude)) : "",
+    status: detail.status || "DRAFT",
+    isFeatured: Boolean(detail.isFeatured),
+    showOnMap: detail.showOnMap !== false,
+    showOnCalendar: detail.showOnCalendar !== false,
+    displayOrder: detail.displayOrder != null ? String(detail.displayOrder) : "",
+    dateDescription: scheduleTr?.dateDescription || "",
+    startMonth: schedule?.startMonth != null ? String(schedule.startMonth) : "",
+    startDay: schedule?.startDay != null ? String(schedule.startDay) : "",
+    endMonth: schedule?.endMonth != null ? String(schedule.endMonth) : "",
+    endDay: schedule?.endDay != null ? String(schedule.endDay) : "",
+    startDate: schedule?.startDate ? String(schedule.startDate).slice(0, 10) : "",
+    endDate: schedule?.endDate ? String(schedule.endDate).slice(0, 10) : "",
+    scheduleType: schedule?.scheduleType || "FIXED_ANNUAL",
+    primaryMediaId: primary?.mediaId || "",
+  };
+}
+
 export function AdminCelebrationsPage() {
   const dispatch = useDispatch();
+  const toast = useAdminToast();
+  const confirm = useAdminConfirm();
   const items = useSelector((state) => state.celebrations.adminItems);
   const provinces = useSelector((state) => state.provinces.items);
   const media = useSelector((state) => state.media.items);
+
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [galleryMediaId, setGalleryMediaId] = useState("");
+  const [galleryBusy, setGalleryBusy] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [modoOrdenar, setModoOrdenar] = useState(false);
+  const [reorderBusy, setReorderBusy] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAdminCelebrations());
@@ -92,17 +154,42 @@ export function AdminCelebrationsPage() {
     dispatch(fetchAdminMedia());
   }, [dispatch]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return [...items]
+  const statusFiltered = useMemo(() => {
+    if (!statusFilter) return items;
+    return items.filter((item) => item.status === statusFilter);
+  }, [items, statusFilter]);
+
+  const filterFn = useCallback((list, q) => {
+    return [...list]
       .filter((item) => {
         if (!q) return true;
         const name = translationName(item).toLowerCase();
         const place = `${item.locality || ""} ${item.placeName || ""} ${provinceName(item)}`.toLowerCase();
         return name.includes(q) || place.includes(q) || item.status?.toLowerCase().includes(q);
       })
-      .sort((a, b) => translationName(a).localeCompare(translationName(b), "es"));
-  }, [items, query]);
+      .sort((a, b) => {
+        const oa = a.displayOrder ?? 9999;
+        const ob = b.displayOrder ?? 9999;
+        if (oa !== ob) return oa - ob;
+        return translationName(a).localeCompare(translationName(b), "es");
+      });
+  }, []);
+
+  const pager = useAdminPagination(statusFiltered, { filterFn });
+
+  const sortableItems = useMemo(
+    () =>
+      [...statusFiltered].sort(
+        (a, b) => (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999),
+      ),
+    [statusFiltered],
+  );
+
+  const stats = useMemo(() => {
+    const published = items.filter((i) => i.status === "PUBLISHED").length;
+    const onMap = items.filter((i) => i.showOnMap && i.status === "PUBLISHED").length;
+    return { total: items.length, published, onMap };
+  }, [items]);
 
   function setField(key, value) {
     setForm((prev) => {
@@ -112,47 +199,142 @@ export function AdminCelebrationsPage() {
     });
   }
 
-  function loadItem(item) {
-    const tr = item.translations?.find((t) => t.locale === "es") || item.translations?.[0];
-    const schedule = item.schedules?.[0];
-    const scheduleTr =
-      schedule?.translations?.find((t) => t.locale === "es") || schedule?.translations?.[0];
-    const primary = item.images?.find((img) => img.isPrimary) || item.images?.[0];
-    setEditingId(item.id);
-    setForm({
-      name: tr?.name || "",
-      slug: tr?.slug || "",
-      shortDescription: tr?.shortDescription || "",
-      locality: item.locality || "",
-      placeName: item.placeName || "",
-      provinceId: item.provinceId || "",
-      latitude: item.latitude != null ? String(Number(item.latitude)) : "",
-      longitude: item.longitude != null ? String(Number(item.longitude)) : "",
-      status: item.status || "DRAFT",
-      isFeatured: Boolean(item.isFeatured),
-      showOnMap: item.showOnMap !== false,
-      showOnCalendar: item.showOnCalendar !== false,
-      displayOrder: item.displayOrder != null ? String(item.displayOrder) : "",
-      dateDescription: scheduleTr?.dateDescription || "",
-      startMonth: schedule?.startMonth != null ? String(schedule.startMonth) : "",
-      startDay: schedule?.startDay != null ? String(schedule.startDay) : "",
-      endMonth: schedule?.endMonth != null ? String(schedule.endMonth) : "",
-      endDay: schedule?.endDay != null ? String(schedule.endDay) : "",
-      startDate: schedule?.startDate ? String(schedule.startDate).slice(0, 10) : "",
-      endDate: schedule?.endDate ? String(schedule.endDate).slice(0, 10) : "",
-      scheduleType: schedule?.scheduleType || "FIXED_ANNUAL",
-      primaryMediaId: primary?.mediaId || "",
-    });
-    setMessage("");
-    setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function resetForm() {
+  function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
+    setGalleryImages([]);
+    setGalleryMediaId("");
     setMessage("");
     setError("");
+    setLoadingDetail(false);
+    setModalOpen(true);
+  }
+
+  async function openEdit(item) {
+    setError("");
+    setMessage("");
+    setLoadingDetail(true);
+    setModalOpen(true);
+    setEditingId(item.id);
+    setGalleryMediaId("");
+    try {
+      const detail = await celebrationsService.adminGet(item.id);
+      setForm(formFromDetail(detail));
+      setGalleryImages(detail.images || []);
+    } catch (err) {
+      setError(err.message || "No se pudo cargar la fiesta");
+      setForm(formFromDetail(item));
+      setGalleryImages(item.images || []);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    setGalleryImages([]);
+    setGalleryMediaId("");
+    setError("");
+    setMessage("");
+    setLoadingDetail(false);
+  }
+
+  async function refreshGallery(celebrationId) {
+    const detail = await celebrationsService.adminGet(celebrationId);
+    setGalleryImages(detail.images || []);
+    setForm(formFromDetail(detail));
+    dispatch(fetchAdminCelebrations());
+    return detail;
+  }
+
+  async function onAddGalleryImage() {
+    if (!editingId || !galleryMediaId) return;
+    setGalleryBusy(true);
+    setError("");
+    try {
+      await celebrationsService.addImage(editingId, {
+        mediaId: galleryMediaId,
+        isPrimary: galleryImages.length === 0,
+        displayOrder: galleryImages.length,
+        translations: [{ locale: "es", altText: form.name || null, caption: null }],
+      });
+      setGalleryMediaId("");
+      await refreshGallery(editingId);
+      toast.push({ type: "success", message: "Imagen agregada a la galería." });
+    } catch (err) {
+      setError(err.message || "No se pudo agregar la imagen");
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
+  async function onSetPrimary(imageId) {
+    if (!editingId) return;
+    setGalleryBusy(true);
+    setError("");
+    try {
+      await celebrationsService.updateImage(editingId, imageId, { isPrimary: true });
+      await refreshGallery(editingId);
+      toast.push({ type: "success", message: "Imagen marcada como primaria." });
+    } catch (err) {
+      setError(err.message || "No se pudo marcar como primaria");
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
+  async function onRemoveGalleryImage(imageId) {
+    if (!editingId) return;
+    setGalleryBusy(true);
+    setError("");
+    try {
+      await celebrationsService.removeImage(editingId, imageId);
+      await refreshGallery(editingId);
+      toast.push({ type: "success", message: "Imagen quitada de la galería." });
+    } catch (err) {
+      setError(err.message || "No se pudo quitar la imagen");
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
+  async function onReorderGallery(ids, reordered) {
+    if (!editingId) return;
+    setGalleryImages(reordered);
+    setGalleryBusy(true);
+    setError("");
+    try {
+      await celebrationsService.reorderImages(editingId, ids);
+      toast.push({ type: "success", message: "Orden de la galería actualizado." });
+      await refreshGallery(editingId);
+    } catch (err) {
+      setError(err.message || "No se pudo reordenar la galería");
+      try {
+        await refreshGallery(editingId);
+      } catch {
+        /* ignore */
+      }
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
+  async function onReorderCelebrations(ids) {
+    setReorderBusy(true);
+    try {
+      await celebrationsService.reorder(ids);
+      toast.push({ type: "success", message: "Orden de fiestas actualizado." });
+      dispatch(fetchAdminCelebrations());
+    } catch (err) {
+      toast.push({
+        type: "error",
+        message: err.message || "No se pudo reordenar las fiestas",
+      });
+    } finally {
+      setReorderBusy(false);
+    }
   }
 
   function buildSchedules() {
@@ -160,12 +342,6 @@ export function AdminCelebrationsPage() {
 
     const base = {
       scheduleType: form.scheduleType,
-      startMonth: form.startMonth ? Number(form.startMonth) : null,
-      startDay: form.startDay ? Number(form.startDay) : null,
-      endMonth: form.endMonth ? Number(form.endMonth) : null,
-      endDay: form.endDay ? Number(form.endDay) : null,
-      startDate: form.startDate || null,
-      endDate: form.endDate || null,
       displayOrder: 0,
       translations: [
         {
@@ -174,11 +350,27 @@ export function AdminCelebrationsPage() {
         },
       ],
     };
+
+    if (form.scheduleType === "YEAR_ROUND") return [base];
+
+    if (["FIXED_ANNUAL", "ANNUAL_RANGE"].includes(form.scheduleType)) {
+      base.startMonth = form.startMonth ? Number(form.startMonth) : null;
+      base.startDay = form.startDay ? Number(form.startDay) : null;
+    }
+    if (form.scheduleType === "ANNUAL_RANGE") {
+      base.endMonth = form.endMonth ? Number(form.endMonth) : null;
+      base.endDay = form.endDay ? Number(form.endDay) : null;
+    }
+    if (["VARIABLE_ANNUAL", "ONE_TIME"].includes(form.scheduleType)) {
+      base.startDate = form.startDate || null;
+      base.endDate = form.endDate || null;
+    }
     return [base];
   }
 
   function buildPayload() {
-    return {
+    const schedules = buildSchedules();
+    const body = {
       provinceId: form.provinceId || null,
       locality: form.locality || null,
       placeName: form.placeName || null,
@@ -188,7 +380,11 @@ export function AdminCelebrationsPage() {
       isFeatured: form.isFeatured,
       showOnMap: form.showOnMap,
       showOnCalendar: form.showOnCalendar,
-      displayOrder: form.displayOrder !== "" ? Number(form.displayOrder) : null,
+      displayOrder: editingId
+        ? form.displayOrder !== ""
+          ? Number(form.displayOrder)
+          : null
+        : nextDisplayOrder(items),
       translations: [
         {
           locale: "es",
@@ -197,22 +393,29 @@ export function AdminCelebrationsPage() {
           shortDescription: form.shortDescription.trim() || null,
         },
       ],
-      schedules: buildSchedules(),
-      ...(editingId
-        ? {}
-        : form.primaryMediaId
-          ? {
-              images: [
-                {
-                  mediaId: form.primaryMediaId,
-                  isPrimary: true,
-                  displayOrder: 0,
-                  translations: [{ locale: "es", altText: form.name, caption: null }],
-                },
-              ],
-            }
-          : { images: [] }),
     };
+
+    // Create: siempre schedules; images solo si hay primaria (o []).
+    // Update: schedules solo si hay contenido; NUNCA images; NUNCA schedules: [].
+    if (!editingId) {
+      body.schedules = schedules;
+      if (form.primaryMediaId) {
+        body.images = [
+          {
+            mediaId: form.primaryMediaId,
+            isPrimary: true,
+            displayOrder: 0,
+            translations: [{ locale: "es", altText: form.name, caption: null }],
+          },
+        ];
+      } else {
+        body.images = [];
+      }
+    } else if (schedules.length > 0) {
+      body.schedules = schedules;
+    }
+
+    return body;
   }
 
   async function onSubmit(e) {
@@ -224,15 +427,23 @@ export function AdminCelebrationsPage() {
     const body = buildPayload();
 
     if (body.status === "PUBLISHED") {
-      if (!body.schedules.length) {
+      const schedulesInBody = Array.isArray(body.schedules);
+      if (!editingId) {
+        if (!schedulesInBody || body.schedules.length === 0) {
+          setSaving(false);
+          setError("Para publicar necesitás una fecha / calendario.");
+          return;
+        }
+        if (!form.primaryMediaId) {
+          body.status = "DRAFT";
+          setMessage("Se guardó como borrador: para publicar hace falta una imagen primaria.");
+        }
+      } else if (schedulesInBody && body.schedules.length === 0) {
         setSaving(false);
         setError("Para publicar necesitás una fecha / calendario.");
         return;
       }
-      if (!editingId && !form.primaryMediaId) {
-        body.status = "DRAFT";
-        setMessage("Se guardó como borrador: para publicar hace falta una imagen primaria.");
-      }
+      // Edit + PUBLISHED sin schedules en body: OK (quedan los existentes).
     }
 
     const action = editingId
@@ -245,38 +456,41 @@ export function AdminCelebrationsPage() {
       return;
     }
 
-    const saved = action.payload;
-
-    if (editingId && form.primaryMediaId) {
-      const already = saved.images?.some((img) => img.mediaId === form.primaryMediaId);
-      if (!already) {
-        try {
-          await celebrationsService.addImage(editingId, {
-            mediaId: form.primaryMediaId,
-            isPrimary: true,
-            displayOrder: saved.images?.length || 0,
-            translations: [{ locale: "es", altText: form.name, caption: null }],
-          });
-        } catch (err) {
-          setMessage(`Fiesta guardada, pero no se pudo asociar la imagen: ${err.message}`);
-          setSaving(false);
-          dispatch(fetchAdminCelebrations());
-          return;
-        }
-      }
-    }
-
     setSaving(false);
-    setMessage(editingId ? "Fiesta actualizada correctamente." : "Fiesta creada correctamente.");
-    resetForm();
+    const successMsg = editingId ? "Fiesta actualizada." : "Fiesta creada.";
+    setMessage(successMsg);
+    toast.push({ type: "success", message: successMsg });
     dispatch(fetchAdminCelebrations());
     dispatch(fetchAdminMedia());
+    setTimeout(() => closeModal(), 450);
   }
 
-  async function onArchive(id) {
-    if (!window.confirm("¿Archivar esta fiesta? Dejará de aparecer en listados activos.")) return;
-    await dispatch(archiveCelebration(id));
-    if (editingId === id) resetForm();
+  async function onArchive(item) {
+    const ok = await confirm.ask({
+      title: "Archivar fiesta",
+      message: `¿Archivar «${translationName(item)}»? Dejará de aparecer en el sitio público.`,
+      confirmLabel: "Archivar",
+    });
+    if (!ok) return;
+
+    const previousStatus = item.status || "DRAFT";
+    const action = await dispatch(archiveCelebration(item.id));
+    if (action.meta.requestStatus === "rejected") {
+      toast.push({
+        type: "error",
+        message: action.payload?.message || "No se pudo archivar",
+      });
+      return;
+    }
+    if (editingId === item.id) closeModal();
+    toast.push({
+      type: "success",
+      message: "Fiesta archivada.",
+      undo: async () => {
+        await dispatch(updateCelebration({ id: item.id, body: { status: previousStatus } }));
+        dispatch(fetchAdminCelebrations());
+      },
+    });
   }
 
   const needsDayMonth = ["FIXED_ANNUAL", "ANNUAL_RANGE"].includes(form.scheduleType);
@@ -285,16 +499,45 @@ export function AdminCelebrationsPage() {
 
   const columns = [
     {
+      key: "thumb",
+      label: "",
+      render: (row) => {
+        const src = thumbUrl(row);
+        return src ? (
+          <img
+            src={src}
+            alt=""
+            className="h-11 w-11 object-cover"
+            style={{ borderRadius: "var(--radius-sm)" }}
+            width={44}
+            height={44}
+          />
+        ) : (
+          <div
+            className="flex h-11 w-11 items-center justify-center bg-[var(--admin-bg)] text-[10px] text-[var(--admin-text-muted)]"
+            style={{ borderRadius: "var(--radius-sm)" }}
+          >
+            —
+          </div>
+        );
+      },
+    },
+    {
       key: "name",
       label: "Fiesta",
       render: (row) => (
         <div>
-          <p className="font-medium text-azul-petroleo">{translationName(row)}</p>
-          <p className="text-xs text-texto/65">
+          <p className="font-medium text-[var(--admin-text)]">{translationName(row)}</p>
+          <p className="text-xs text-[var(--admin-text-muted)]">
             {row.placeName || row.locality || "Sin lugar"} · {provinceName(row)}
           </p>
         </div>
       ),
+    },
+    {
+      key: "date",
+      label: "Fecha",
+      render: (row) => <span className="text-sm">{scheduleLabel(row)}</span>,
     },
     {
       key: "status",
@@ -307,13 +550,13 @@ export function AdminCelebrationsPage() {
       render: (row) => (
         <div className="flex flex-wrap gap-1 text-[10px] uppercase tracking-wide">
           {row.showOnMap ? (
-            <span className="border border-azul-logo/20 px-1.5 py-0.5">Mapa</span>
+            <span className="border border-[var(--admin-border)] px-1.5 py-0.5">Mapa</span>
           ) : null}
           {row.showOnCalendar ? (
-            <span className="border border-azul-logo/20 px-1.5 py-0.5">Calendario</span>
+            <span className="border border-[var(--admin-border)] px-1.5 py-0.5">Calendario</span>
           ) : null}
           {row.isFeatured ? (
-            <span className="border border-naranja-libro/40 text-naranja-libro px-1.5 py-0.5">
+            <span className="border border-[color-mix(in_srgb,var(--admin-accent)_40%,transparent)] px-1.5 py-0.5 text-[var(--admin-accent)]">
               Destacada
             </span>
           ) : null}
@@ -324,75 +567,177 @@ export function AdminCelebrationsPage() {
       key: "actions",
       label: "",
       render: (row) => (
-        <div className="flex justify-end gap-3 whitespace-nowrap">
-          <button
-            type="button"
-            className="text-sm font-medium text-celeste-cielo hover:underline"
-            onClick={() => loadItem(row)}
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            className="text-sm font-medium text-naranja-libro hover:underline"
-            onClick={() => onArchive(row.id)}
-          >
-            Archivar
-          </button>
+        <div className="flex justify-end gap-1 whitespace-nowrap">
+          <AdminIconButton label="Editar" onClick={() => openEdit(row)}>
+            ✎
+          </AdminIconButton>
+          <AdminIconButton label="Archivar" danger onClick={() => onArchive(row)}>
+            ⌫
+          </AdminIconButton>
         </div>
       ),
     },
   ];
 
+  const preview = media.find((m) => m.id === form.primaryMediaId);
+  const galleryMediaOptions = media.filter(
+    (m) => !galleryImages.some((img) => img.mediaId === m.id),
+  );
+
   return (
     <div>
+      {confirm.dialog}
+
       <AdminPageHeader
         title="Fiestas"
-        subtitle="Alta y edición de celebraciones: identidad, ubicación, fecha, visibilidad e imagen primaria."
+        subtitle="Celebraciones del mapa y calendario. Datos desde GET /admin/celebrations."
         actions={
-          editingId ? (
-            <Boton variante="secundario" tamano="sm" onClick={resetForm}>
-              Nueva fiesta
-            </Boton>
-          ) : null
+          <div className="flex flex-wrap gap-2">
+            <AdminButton
+              tamano="sm"
+              variante="secondary"
+              onClick={() => setModoOrdenar((v) => !v)}
+            >
+              {modoOrdenar ? "Salir de ordenar" : "Reordenar"}
+            </AdminButton>
+            {!modoOrdenar ? (
+              <AdminButton tamano="sm" onClick={openCreate}>
+                + Nueva fiesta
+              </AdminButton>
+            ) : null}
+          </div>
         }
       />
 
-      <div className="mb-4">
-        <AdminSearch
-          value={query}
-          onChange={setQuery}
-          placeholder="Buscar por nombre, lugar, provincia o estado…"
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <AdminStatCard label="Total de fiestas" value={stats.total} hint="En el panel admin" />
+        <AdminStatCard
+          label="Publicadas"
+          value={stats.published}
+          hint="Visibles en el sitio"
+          accent="petroleo"
+        />
+        <AdminStatCard
+          label="En el mapa"
+          value={stats.onMap}
+          hint="Con showOnMap"
+          accent="naranja"
         />
       </div>
 
-      <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-        <AdminTable
-          columns={columns}
-          rows={filtered}
-          empty="Todavía no hay fiestas. Creá la primera con el formulario."
-        />
+      <AdminToolbar
+        search={
+          modoOrdenar ? null : (
+            <AdminSearch
+              value={pager.query}
+              onChange={pager.setQuery}
+              placeholder="Buscar por nombre, lugar, provincia o estado…"
+            />
+          )
+        }
+      >
+        <AdminSelect
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            pager.setPage(1);
+          }}
+          aria-label="Filtrar por estado"
+        >
+          <option value="">Todos</option>
+          <option value="PUBLISHED">PUBLISHED</option>
+          <option value="DRAFT">DRAFT</option>
+          <option value="ARCHIVED">ARCHIVED</option>
+        </AdminSelect>
+      </AdminToolbar>
 
-        <form onSubmit={onSubmit}>
-          <AdminPanel
-            title={editingId ? "Editar fiesta" : "Nueva fiesta"}
-            footer={
-              <>
-                <Boton type="submit" disabled={saving}>
-                  {saving ? "Guardando…" : editingId ? "Guardar cambios" : "Crear fiesta"}
-                </Boton>
-                {editingId ? (
-                  <Boton type="button" variante="secundario" onClick={resetForm}>
-                    Cancelar
-                  </Boton>
-                ) : null}
-              </>
+      {modoOrdenar ? (
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--admin-text-muted)]">
+            Arrastrá para cambiar el orden. Se guarda al soltar.
+          </p>
+          <AdminSortableList
+            items={sortableItems}
+            busy={reorderBusy}
+            empty="No hay fiestas para reordenar."
+            onReorder={onReorderCelebrations}
+            renderItem={(item) => {
+              const src = thumbUrl(item);
+              return (
+                <div className="flex items-center gap-3">
+                  {src ? (
+                    <img
+                      src={src}
+                      alt=""
+                      className="h-10 w-10 object-cover"
+                      style={{ borderRadius: "var(--radius-sm)" }}
+                      width={40}
+                      height={40}
+                    />
+                  ) : (
+                    <div
+                      className="flex h-10 w-10 items-center justify-center bg-[var(--admin-bg)] text-[10px] text-[var(--admin-text-muted)]"
+                      style={{ borderRadius: "var(--radius-sm)" }}
+                    >
+                      —
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-[var(--admin-text)]">
+                      {translationName(item)}
+                    </p>
+                    <p className="truncate text-xs text-[var(--admin-text-muted)]">
+                      Orden actual: {item.displayOrder ?? "—"} · {provinceName(item)}
+                    </p>
+                  </div>
+                </div>
+              );
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          <AdminTable
+            columns={columns}
+            rows={pager.pageItems}
+            empty="Todavía no hay fiestas. Creá la primera con «Nueva fiesta»."
+            emptyAction={
+              <AdminButton tamano="sm" onClick={openCreate}>
+                Creá la primera
+              </AdminButton>
             }
-          >
-            <AdminSection
-              title="Identidad"
-              description="Nombre público, URL amigable y texto corto para fichas y previews."
-            >
+          />
+          <AdminPagination
+            page={pager.page}
+            totalPages={pager.totalPages}
+            from={pager.from}
+            to={pager.to}
+            total={pager.total}
+            onPageChange={pager.setPage}
+          />
+        </>
+      )}
+
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title={editingId ? "Editar fiesta" : "Nueva fiesta"}
+        subtitle="Identidad, ubicación, fecha, visibilidad e imagen primaria."
+        size="xl"
+        footer={
+          <AdminModalActions
+            formId="celebration-form"
+            onCancel={closeModal}
+            saving={saving || loadingDetail}
+            submitLabel={editingId ? "Guardar cambios" : "Crear fiesta"}
+          />
+        }
+      >
+        {loadingDetail ? (
+          <p className="py-8 text-sm text-[var(--admin-text-muted)]">Cargando fiesta…</p>
+        ) : (
+          <form id="celebration-form" onSubmit={onSubmit}>
+            <AdminSection title="Identidad" description="Nombre público y texto corto.">
               <AdminField label="Nombre de la fiesta" required span={2}>
                 <AdminInput
                   required
@@ -401,42 +746,32 @@ export function AdminCelebrationsPage() {
                   placeholder="Ej. Señor y Virgen de la Quebrada"
                 />
               </AdminField>
-              <AdminField
-                label="Slug"
-                required
-                hint="Solo minúsculas, números y guiones. Se usa en URLs."
-              >
+              <AdminField label="Slug" required hint="Solo minúsculas, números y guiones.">
                 <AdminInput
                   required
                   value={form.slug}
                   onChange={(e) => setField("slug", e.target.value)}
                   pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
-                  placeholder="senor-y-virgen-de-la-quebrada"
                 />
               </AdminField>
-              <AdminField label="Orden de visualización" hint="Menor número = aparece antes.">
-                <AdminInput
-                  type="number"
-                  min="0"
-                  value={form.displayOrder}
-                  onChange={(e) => setField("displayOrder", e.target.value)}
-                  placeholder="Opcional"
-                />
-              </AdminField>
-              <AdminField label="Descripción corta" span={2} hint="Hasta un párrafo breve.">
+              {editingId ? (
+                <AdminField label="Orden" hint="Se cambia con Reordenar en el listado.">
+                  <p className="text-sm text-[var(--admin-text)]">
+                    {form.displayOrder !== "" ? form.displayOrder : "—"}
+                  </p>
+                </AdminField>
+              ) : null}
+              <AdminField label="Descripción corta" span={2}>
                 <AdminTextarea
                   value={form.shortDescription}
                   onChange={(e) => setField("shortDescription", e.target.value)}
-                  placeholder="Resumen para el mapa, listados y fichas."
                   rows={3}
+                  placeholder="Resumen para fichas y previews."
                 />
               </AdminField>
             </AdminSection>
 
-            <AdminSection
-              title="Ubicación"
-              description="Datos geográficos para el mapa y filtros por provincia."
-            >
+            <AdminSection title="Ubicación" description="Datos para el mapa.">
               <AdminField label="Provincia" span={2}>
                 <AdminSelect
                   value={form.provinceId}
@@ -454,48 +789,41 @@ export function AdminCelebrationsPage() {
                 <AdminInput
                   value={form.locality}
                   onChange={(e) => setField("locality", e.target.value)}
-                  placeholder="Villa de la Quebrada"
                 />
               </AdminField>
               <AdminField label="Lugar / santuario">
                 <AdminInput
                   value={form.placeName}
                   onChange={(e) => setField("placeName", e.target.value)}
-                  placeholder="Nombre del templo o sitio"
                 />
               </AdminField>
-              <AdminField label="Latitud" hint="Obligatoria si se muestra en el mapa.">
+              <AdminField label="Latitud">
                 <AdminInput
                   type="number"
                   step="any"
                   value={form.latitude}
                   onChange={(e) => setField("latitude", e.target.value)}
-                  placeholder="-33.123456"
                 />
               </AdminField>
-              <AdminField label="Longitud" hint="Va junto con la latitud.">
+              <AdminField label="Longitud">
                 <AdminInput
                   type="number"
                   step="any"
                   value={form.longitude}
                   onChange={(e) => setField("longitude", e.target.value)}
-                  placeholder="-66.123456"
                 />
               </AdminField>
             </AdminSection>
 
-            <AdminSection
-              title="Fecha y calendario"
-              description="El backend valida el tipo de agenda. Completá los campos según el tipo elegido."
-            >
+            <AdminSection title="Fecha y calendario">
               <AdminField label="Tipo de fecha" span={2}>
                 <AdminSelect
                   value={form.scheduleType}
                   onChange={(e) => setField("scheduleType", e.target.value)}
                 >
                   <option value="FIXED_ANNUAL">Fija cada año (día y mes)</option>
-                  <option value="ANNUAL_RANGE">Rango anual (desde–hasta)</option>
-                  <option value="VARIABLE_ANNUAL">Variable / móvil (fecha concreta)</option>
+                  <option value="ANNUAL_RANGE">Rango anual</option>
+                  <option value="VARIABLE_ANNUAL">Variable / móvil</option>
                   <option value="ONE_TIME">Única vez</option>
                   <option value="YEAR_ROUND">Todo el año</option>
                 </AdminSelect>
@@ -510,12 +838,11 @@ export function AdminCelebrationsPage() {
                   required={form.scheduleType !== "YEAR_ROUND"}
                   value={form.dateDescription}
                   onChange={(e) => setField("dateDescription", e.target.value)}
-                  placeholder="3 de mayo"
                 />
               </AdminField>
               {needsDayMonth ? (
                 <>
-                  <AdminField label="Mes de inicio" required>
+                  <AdminField label="Mes" required>
                     <AdminSelect
                       required
                       value={form.startMonth}
@@ -529,7 +856,7 @@ export function AdminCelebrationsPage() {
                       ))}
                     </AdminSelect>
                   </AdminField>
-                  <AdminField label="Día de inicio" required>
+                  <AdminField label="Día" required>
                     <AdminInput
                       required
                       type="number"
@@ -543,7 +870,7 @@ export function AdminCelebrationsPage() {
               ) : null}
               {needsRange ? (
                 <>
-                  <AdminField label="Mes de fin" required>
+                  <AdminField label="Mes fin" required>
                     <AdminSelect
                       required
                       value={form.endMonth}
@@ -557,7 +884,7 @@ export function AdminCelebrationsPage() {
                       ))}
                     </AdminSelect>
                   </AdminField>
-                  <AdminField label="Día de fin" required>
+                  <AdminField label="Día fin" required>
                     <AdminInput
                       required
                       type="number"
@@ -590,10 +917,7 @@ export function AdminCelebrationsPage() {
               ) : null}
             </AdminSection>
 
-            <AdminSection
-              title="Visibilidad y publicación"
-              description="Controlá dónde aparece y en qué estado queda."
-            >
+            <AdminSection title="Visibilidad y publicación">
               <AdminField label="Estado" required>
                 <AdminSelect
                   value={form.status}
@@ -604,72 +928,167 @@ export function AdminCelebrationsPage() {
                   <option value="ARCHIVED">Archivado</option>
                 </AdminSelect>
               </AdminField>
-              <AdminField
-                label="Imagen primaria"
-                hint="Subí antes en Imágenes. Obligatoria para publicar."
-              >
-                <AdminSelect
-                  value={form.primaryMediaId}
-                  onChange={(e) => setField("primaryMediaId", e.target.value)}
-                >
-                  <option value="">Sin imagen</option>
-                  {media.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.originalFilename || m.id}
-                    </option>
-                  ))}
-                </AdminSelect>
-              </AdminField>
-              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
+              {!editingId ? (
+                <AdminField label="Imagen primaria" hint="Desde la biblioteca de Imágenes.">
+                  <AdminSelect
+                    value={form.primaryMediaId}
+                    onChange={(e) => setField("primaryMediaId", e.target.value)}
+                  >
+                    <option value="">Sin imagen</option>
+                    {media.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.originalFilename || m.id}
+                      </option>
+                    ))}
+                  </AdminSelect>
+                </AdminField>
+              ) : (
+                <AdminField label="Galería" hint="Gestioná las fotos más abajo.">
+                  <p className="text-sm text-[var(--admin-text-muted)]">
+                    {galleryImages.length} imagen(es) asociadas
+                  </p>
+                </AdminField>
+              )}
+              <div className="grid gap-3 sm:col-span-2 sm:grid-cols-3">
                 <AdminCheckbox
                   label="Mostrar en mapa"
-                  hint="Requiere lat/lng."
                   checked={form.showOnMap}
                   onChange={(e) => setField("showOnMap", e.target.checked)}
                 />
                 <AdminCheckbox
                   label="Mostrar en calendario"
-                  hint="Aparece mes a mes."
                   checked={form.showOnCalendar}
                   onChange={(e) => setField("showOnCalendar", e.target.checked)}
                 />
                 <AdminCheckbox
                   label="Destacada"
-                  hint="Prioridad en listados."
                   checked={form.isFeatured}
                   onChange={(e) => setField("isFeatured", e.target.checked)}
                 />
               </div>
             </AdminSection>
 
-            {form.primaryMediaId ? (
-              <div className="py-4">
-                {(() => {
-                  const selected = media.find((m) => m.id === form.primaryMediaId);
-                  if (!selected?.url) return null;
-                  return (
-                    <figure className="overflow-hidden border border-azul-logo/15">
-                      <img
-                        src={selected.url}
-                        alt=""
-                        className="aspect-[16/9] w-full object-cover"
-                      />
-                      <figcaption className="bg-papel px-3 py-2 text-xs">
-                        Vista previa · {selected.originalFilename}
-                      </figcaption>
-                    </figure>
-                  );
-                })()}
-              </div>
+            {!editingId && preview?.url ? (
+              <figure className="my-4 overflow-hidden border border-[var(--admin-border)]">
+                <img src={preview.url} alt="" className="aspect-[16/9] w-full object-cover" />
+                <figcaption className="bg-[var(--admin-surface)] px-3 py-2 text-xs">
+                  {preview.originalFilename}
+                </figcaption>
+              </figure>
             ) : null}
 
-            <div className="space-y-2 py-4">
+            {editingId ? (
+              <AdminSection
+                title="Galería"
+                description="Arrastrá para reordenar. Agregar, marcar primaria o quitar. No se envían images en el PATCH de la fiesta."
+              >
+                <div className="sm:col-span-2 space-y-3">
+                  {galleryImages.length === 0 ? (
+                    <p className="text-sm text-[var(--admin-text-muted)]">
+                      Todavía no hay imágenes en esta fiesta.
+                    </p>
+                  ) : (
+                    <AdminSortableList
+                      items={galleryImages}
+                      getId={(img) => img.id}
+                      busy={galleryBusy}
+                      empty="Todavía no hay imágenes en esta fiesta."
+                      onReorder={onReorderGallery}
+                      renderItem={(img) => {
+                        const src = mediaUrl(img) || thumbUrl(img);
+                        return (
+                          <div className="flex items-center gap-3">
+                            {src ? (
+                              <img
+                                src={src}
+                                alt=""
+                                className="h-12 w-12 shrink-0 object-cover"
+                                width={48}
+                                height={48}
+                                style={{ borderRadius: "var(--radius-sm)" }}
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--admin-bg)] text-xs text-[var(--admin-text-muted)]">
+                                —
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {img.isPrimary ? (
+                                  <span className="border border-[var(--admin-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+                                    Primaria
+                                  </span>
+                                ) : null}
+                                {imageCaption(img) ? (
+                                  <span className="truncate text-xs text-[var(--admin-text-muted)]">
+                                    {imageCaption(img)}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {!img.isPrimary ? (
+                                  <AdminButton
+                                    variante="secondary"
+                                    tamano="sm"
+                                    type="button"
+                                    disabled={galleryBusy}
+                                    onClick={() => onSetPrimary(img.id)}
+                                  >
+                                    Primaria
+                                  </AdminButton>
+                                ) : null}
+                                <AdminButton
+                                  variante="danger"
+                                  tamano="sm"
+                                  type="button"
+                                  disabled={galleryBusy}
+                                  onClick={() => onRemoveGalleryImage(img.id)}
+                                >
+                                  Quitar
+                                </AdminButton>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+                  )}
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <AdminField label="Media de la biblioteca" className="min-w-0 flex-1">
+                      <AdminSelect
+                        value={galleryMediaId}
+                        onChange={(e) => setGalleryMediaId(e.target.value)}
+                        disabled={galleryBusy}
+                      >
+                        <option value="">Elegir imagen…</option>
+                        {galleryMediaOptions.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.originalFilename || m.id}
+                          </option>
+                        ))}
+                      </AdminSelect>
+                    </AdminField>
+                    <AdminButton
+                      type="button"
+                      tamano="sm"
+                      disabled={galleryBusy || !galleryMediaId}
+                      onClick={onAddGalleryImage}
+                    >
+                      Agregar a galería
+                    </AdminButton>
+                  </div>
+                </div>
+              </AdminSection>
+            ) : null}
+
+            <div className="space-y-2 py-3">
               {error ? <AdminAlert type="error">{error}</AdminAlert> : null}
               {message ? <AdminAlert type="success">{message}</AdminAlert> : null}
             </div>
-          </AdminPanel>
-        </form>
-      </div>
+          </form>
+        )}
+      </AdminModal>
     </div>
   );
 }

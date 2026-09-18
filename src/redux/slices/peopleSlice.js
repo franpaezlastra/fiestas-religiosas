@@ -5,7 +5,8 @@ export const fetchPublicPeople = createAsyncThunk(
   "people/fetchPublic",
   async (params = {}, { rejectWithValue }) => {
     try {
-      return await peopleService.publicList(params);
+      const data = await peopleService.publicList(params);
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       return rejectWithValue({ message: error.message });
     }
@@ -63,9 +64,17 @@ const peopleSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(fetchPublicPeople.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
       .addCase(fetchPublicPeople.fulfilled, (state, action) => {
         state.publicItems = action.payload;
         state.status = "succeeded";
+      })
+      .addCase(fetchPublicPeople.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload?.message || "Error al cargar personas";
       })
       .addCase(fetchAdminPeople.fulfilled, (state, action) => {
         state.adminItems = action.payload;

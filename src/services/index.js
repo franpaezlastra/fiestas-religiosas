@@ -12,22 +12,38 @@ export const celebrationsService = {
     const q = new URLSearchParams({ locale: "es", ...params });
     return api(`/public/celebrations?${q}`);
   },
+  publicImages: (celebrationId) =>
+    api(`/public/celebrations/${celebrationId}/images?locale=es`),
   adminList: () => api("/admin/celebrations"),
   adminGet: (id) => api(`/admin/celebrations/${id}`),
   create: (body) => api("/admin/celebrations", { method: "POST", body: JSON.stringify(body) }),
   update: (id, body) =>
     api(`/admin/celebrations/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   archive: (id) => api(`/admin/celebrations/${id}`, { method: "DELETE" }),
+  reorder: (ids) =>
+    api("/admin/celebrations/reorder", { method: "PUT", body: JSON.stringify({ ids }) }),
   addImage: (id, body) =>
     api(`/admin/celebrations/${id}/images`, { method: "POST", body: JSON.stringify(body) }),
+  updateImage: (celebrationId, imageId, body) =>
+    api(`/admin/celebrations/${celebrationId}/images/${imageId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  reorderImages: (celebrationId, ids) =>
+    api(`/admin/celebrations/${celebrationId}/images/reorder`, {
+      method: "PUT",
+      body: JSON.stringify({ ids }),
+    }),
   removeImage: (celebrationId, imageId) =>
     api(`/admin/celebrations/${celebrationId}/images/${imageId}`, { method: "DELETE" }),
 };
 
 export const peopleService = {
+  // Sin ?locale=es: Vercel CDN cacheó un HIT vacío en esa URL exacta
   publicList: (params = {}) => {
-    const q = new URLSearchParams({ locale: "es", ...params });
-    return api(`/public/people?${q}`);
+    const q = new URLSearchParams(params);
+    const qs = q.toString();
+    return api(`/public/people${qs ? `?${qs}` : ""}`);
   },
   adminList: () => api("/admin/people"),
   adminGet: (id) => api(`/admin/people/${id}`),
@@ -38,12 +54,15 @@ export const peopleService = {
 };
 
 export const timelinesService = {
-  publicList: () => api("/public/timelines?locale=es"),
+  publicList: () => api("/public/timelines"),
   adminList: () => api("/admin/timelines"),
+  adminGet: (id) => api(`/admin/timelines/${id}`),
   create: (body) => api("/admin/timelines", { method: "POST", body: JSON.stringify(body) }),
   update: (id, body) =>
     api(`/admin/timelines/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   archive: (id) => api(`/admin/timelines/${id}`, { method: "DELETE" }),
+  reorder: (ids) =>
+    api("/admin/timelines/reorder", { method: "PUT", body: JSON.stringify({ ids }) }),
 };
 
 export const videosService = {

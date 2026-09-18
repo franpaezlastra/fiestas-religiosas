@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectFiestasForUi } from "../../utils/celebrationsAdapter";
+import { fiestaNumero, selectFiestasForUi } from "../../utils/celebrationsAdapter";
 import { fetchPublicCelebrations } from "../../redux/slices/celebrationsSlice";
 
 const MESES = [
@@ -101,7 +101,7 @@ export function Calendario({ fiestaActiva, onActiva }) {
                                   : "bg-azul-petroleo text-blanco"
                             }`}
                           >
-                            {f.id}
+                            {fiestaNumero(f)}
                           </span>
                         </button>
                       </li>
@@ -129,7 +129,7 @@ export function Calendario({ fiestaActiva, onActiva }) {
                     }`}
                   >
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-azul-petroleo text-[11px] text-blanco">
-                      {f.id}
+                      {fiestaNumero(f)}
                     </span>
                     <span>
                       <span className="font-medium text-azul-petroleo">{f.nombre}</span>
@@ -165,7 +165,7 @@ export function Calendario({ fiestaActiva, onActiva }) {
                     }`}
                   >
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-naranja-libro text-[11px] text-naranja-libro">
-                      {f.id}
+                      {fiestaNumero(f)}
                     </span>
                     <span>
                       <span className="font-medium text-azul-petroleo">{f.nombre}</span>

@@ -44,7 +44,7 @@ export function SeccionAutor() {
     <section>
       <Portadilla id="autor" titulo="El autor y los editores" kicker="The author and the editors" />
       <div className="bg-papel px-4 py-12 md:py-20">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8 md:gap-10">
+        <div className="mx-auto flex max-w-4xl flex-col gap-12 md:gap-16">
           {AUTORES.map((autor) => (
             <AuthorCard
               key={autor.id}

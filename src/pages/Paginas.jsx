@@ -3,11 +3,7 @@ import { SeccionBergoglio, SeccionTresArgentinos } from "../features/francisco/S
 import { SeccionCreditos, SeccionTapa } from "../features/libro/SeccionCreditos";
 import { SeccionEscritores } from "../features/escritores/SeccionEscritores";
 import { SeccionSantos } from "../features/santos/SeccionSantos";
-import {
-  SeccionPapaLeon,
-  SeccionRedes,
-  SeccionShop,
-  SeccionVideo } from "../features/pendientes/SeccionesPendientes";
+import { SeccionRedes, SeccionVideo } from "../features/pendientes/SeccionesPendientes";
 
 export function PaginaFrancisco() {
   return <SeccionBergoglio />;
@@ -29,10 +25,6 @@ export function PaginaAutor() {
   return <SeccionAutor />;
 }
 
-export function PaginaShop() {
-  return <SeccionShop />;
-}
-
 export function PaginaVideo() {
   return <SeccionVideo />;
 }
@@ -43,10 +35,6 @@ export function PaginaCreditos() {
 
 export function PaginaTapa() {
   return <SeccionTapa />;
-}
-
-export function PaginaPapaLeon() {
-  return <SeccionPapaLeon />;
 }
 
 export function PaginaRedes() {

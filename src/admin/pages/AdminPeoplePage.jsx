@@ -1,93 +1,359 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Boton } from "../../components/ui/Boton";
+import { peopleService } from "../../services";
 import {
   archivePerson,
   createPerson,
   fetchAdminPeople,
   updatePerson,
 } from "../../redux/slices/peopleSlice";
+import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { slugify } from "../../utils/slugify";
+import { useAdminPagination } from "../hooks/useAdminPagination";
+import { AdminButton } from "../components/AdminButton";
+import { useAdminConfirm } from "../components/AdminConfirm";
+import { useAdminToast } from "../components/AdminToast";
+import { AdminModal, AdminModalActions } from "../components/AdminModal";
+import { mediaUrl, thumbUrl } from "../utils/mediaUrl";
 import {
   AdminAlert,
   AdminBadge,
   AdminField,
+  AdminIconButton,
   AdminInput,
   AdminPageHeader,
-  AdminPanel,
+  AdminPagination,
   AdminSearch,
   AdminSection,
   AdminSelect,
+  AdminStatCard,
   AdminTable,
   AdminTextarea,
+  AdminToolbar,
 } from "../components/AdminForm";
 
-const empty = {
+const emptyForm = {
   displayName: "",
   slug: "",
-  shortBio: "",
-  biography: "",
   firstName: "",
   lastName: "",
   birthPlace: "",
+  birthDate: "",
+  deathDate: "",
+  nationalityCode: "",
   role: "SAINT",
   status: "DRAFT",
+  shortBio: "",
+  biography: "",
+};
+
+const ROLE_LABELS = {
+  SAINT: "Santo",
+  BLESSED: "Beato",
+  FEATURED_PERSON: "Destacado",
 };
 
 function nameOf(person) {
   return person.translations?.find((t) => t.locale === "es")?.displayName || person.id;
 }
 
+function roleOf(person) {
+  return person.roles?.[0]?.role || null;
+}
+
 function roleLabel(person) {
-  const role = person.roles?.[0]?.role;
-  return (
-    { SAINT: "Santo", BLESSED: "Beato", FEATURED_PERSON: "Destacado" }[role] || role || "—"
-  );
+  const role = roleOf(person);
+  return ROLE_LABELS[role] || role || "—";
+}
+
+function dateInputValue(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+function formFromDetail(detail) {
+  const tr = detail.translations?.find((t) => t.locale === "es") || detail.translations?.[0];
+  return {
+    displayName: tr?.displayName || "",
+    slug: tr?.slug || "",
+    firstName: detail.firstName || "",
+    lastName: detail.lastName || "",
+    birthPlace: tr?.birthPlace || "",
+    birthDate: dateInputValue(detail.birthDate),
+    deathDate: dateInputValue(detail.deathDate),
+    nationalityCode: detail.nationalityCode || "",
+    role: roleOf(detail) || "SAINT",
+    status: detail.status || "DRAFT",
+    shortBio: tr?.shortBio || "",
+    biography: tr?.biography || "",
+  };
+}
+
+function buildTranslations(form) {
+  return [
+    {
+      locale: "es",
+      displayName: form.displayName.trim(),
+      slug: (form.slug || slugify(form.displayName)).trim(),
+      shortBio: form.shortBio.trim() || null,
+      biography: form.biography.trim() || null,
+      birthPlace: form.birthPlace.trim() || null,
+    },
+  ];
+}
+
+function buildRoles(form, existingRoles = []) {
+  const displayOrder = existingRoles?.[0]?.displayOrder ?? 0;
+  return [{ role: form.role, displayOrder }];
+}
+
+function serializeImages(images, displayName = "") {
+  return (images || []).map((img, index) => {
+    const mediaId = img.mediaId || img.media?.id;
+    const trs =
+      img.translations?.length > 0
+        ? img.translations.map((t) => ({
+            locale: t.locale,
+            caption: t.caption ?? null,
+            altText: t.altText ?? null,
+          }))
+        : [
+            {
+              locale: "es",
+              caption: null,
+              altText: displayName || null,
+            },
+          ];
+    return {
+      mediaId,
+      isPrimary: Boolean(img.isPrimary) || index === 0,
+      displayOrder: img.displayOrder ?? index,
+      translations: trs,
+    };
+  });
+}
+
+function imageCaption(img) {
+  const tr = img.translations?.find((t) => t.locale === "es") || img.translations?.[0];
+  return tr?.caption || "";
 }
 
 export function AdminPeoplePage() {
   const dispatch = useDispatch();
+  const toast = useAdminToast();
+  const confirm = useAdminConfirm();
   const items = useSelector((state) => state.people.adminItems);
-  const [form, setForm] = useState(empty);
+  const media = useSelector((state) => state.media.items);
+
+  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState("");
+  const [personImages, setPersonImages] = useState([]);
+  const [existingRoles, setExistingRoles] = useState([]);
+  const [selectedMediaId, setSelectedMediaId] = useState("");
+  const [imagesDirty, setImagesDirty] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     dispatch(fetchAdminPeople());
+    dispatch(fetchAdminMedia());
   }, [dispatch]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((item) => {
-      if (!q) return true;
-      return `${nameOf(item)} ${roleLabel(item)} ${item.status}`.toLowerCase().includes(q);
-    });
-  }, [items, query]);
+  const statusFiltered = useMemo(() => {
+    if (!statusFilter) return items;
+    return items.filter((item) => item.status === statusFilter);
+  }, [items, statusFilter]);
 
-  function load(item) {
-    const tr = item.translations?.find((t) => t.locale === "es") || item.translations?.[0];
-    setEditingId(item.id);
-    setForm({
-      displayName: tr?.displayName || "",
-      slug: tr?.slug || "",
-      shortBio: tr?.shortBio || "",
-      biography: tr?.biography || "",
-      firstName: item.firstName || "",
-      lastName: item.lastName || "",
-      birthPlace: tr?.birthPlace || "",
-      role: item.roles?.[0]?.role || "SAINT",
-      status: item.status || "DRAFT",
+  const filterFn = useCallback((list, q) => {
+    if (!q) return list;
+    return list.filter((item) =>
+      `${nameOf(item)} ${roleLabel(item)} ${item.status}`.toLowerCase().includes(q),
+    );
+  }, []);
+
+  const pager = useAdminPagination(statusFiltered, { filterFn });
+
+  const stats = useMemo(() => {
+    const published = items.filter((i) => i.status === "PUBLISHED").length;
+    const drafts = items.filter((i) => i.status === "DRAFT").length;
+    return { total: items.length, published, drafts };
+  }, [items]);
+
+  function setField(key, value) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "displayName" && !editingId) next.slug = slugify(value);
+      if (key === "nationalityCode") {
+        next.nationalityCode = String(value)
+          .replace(/[^a-zA-Z]/g, "")
+          .slice(0, 2)
+          .toUpperCase();
+      }
+      return next;
     });
-    setError("");
-    setMessage("");
   }
 
-  function reset() {
+  function openCreate() {
     setEditingId(null);
-    setForm(empty);
+    setForm(emptyForm);
+    setPersonImages([]);
+    setExistingRoles([]);
+    setSelectedMediaId("");
+    setImagesDirty(false);
+    setMessage("");
+    setError("");
+    setLoadingDetail(false);
+    setModalOpen(true);
+  }
+
+  async function openEdit(item) {
+    setError("");
+    setMessage("");
+    setLoadingDetail(true);
+    setModalOpen(true);
+    setEditingId(item.id);
+    setSelectedMediaId("");
+    setImagesDirty(false);
+    try {
+      const detail = await peopleService.adminGet(item.id);
+      setForm(formFromDetail(detail));
+      setPersonImages(detail.images || []);
+      setExistingRoles(detail.roles || []);
+    } catch (err) {
+      setError(err.message || "No se pudo cargar la persona");
+      setForm(formFromDetail(item));
+      setPersonImages(item.images || []);
+      setExistingRoles(item.roles || []);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    setPersonImages([]);
+    setExistingRoles([]);
+    setSelectedMediaId("");
+    setImagesDirty(false);
+    setError("");
+    setMessage("");
+    setLoadingDetail(false);
+    setImageBusy(false);
+  }
+
+  function buildScalarBody() {
+    const nationality = form.nationalityCode.trim().toUpperCase();
+    return {
+      firstName: form.firstName.trim() || null,
+      lastName: form.lastName.trim() || null,
+      birthDate: form.birthDate || null,
+      deathDate: form.deathDate || null,
+      nationalityCode: nationality.length === 2 ? nationality : null,
+      status: form.status,
+      translations: buildTranslations(form),
+      roles: buildRoles(form, existingRoles),
+    };
+  }
+
+  async function onAddImage() {
+    if (!selectedMediaId) return;
+
+    const already = personImages.some(
+      (img) => (img.mediaId || img.media?.id) === selectedMediaId,
+    );
+    if (already) {
+      setError("Esa imagen ya está asociada a esta persona.");
+      return;
+    }
+
+    const nextImages = [
+      ...personImages,
+      {
+        mediaId: selectedMediaId,
+        isPrimary: personImages.length === 0,
+        displayOrder: personImages.length,
+        translations: [
+          {
+            locale: "es",
+            caption: null,
+            altText: form.displayName || null,
+          },
+        ],
+        media: media.find((m) => m.id === selectedMediaId),
+      },
+    ];
+
+    // Create: solo estado local; se envía en el POST.
+    if (!editingId) {
+      setPersonImages(nextImages);
+      setSelectedMediaId("");
+      setImagesDirty(true);
+      return;
+    }
+
+    setImageBusy(true);
+    setError("");
+    try {
+      const body = {
+        ...buildScalarBody(),
+        images: serializeImages(nextImages, form.displayName),
+      };
+      const updated = await peopleService.update(editingId, body);
+      setPersonImages(updated.images || nextImages);
+      setExistingRoles(updated.roles || existingRoles);
+      setSelectedMediaId("");
+      setImagesDirty(false);
+      setMessage("Imagen agregada.");
+      toast.push({ type: "success", message: "Imagen agregada." });
+      dispatch(fetchAdminPeople());
+    } catch (err) {
+      setError(err.message || "No se pudo agregar la imagen");
+    } finally {
+      setImageBusy(false);
+    }
+  }
+
+  async function onRemoveImage(mediaId) {
+    const normalized = personImages
+      .filter((img) => (img.mediaId || img.media?.id) !== mediaId)
+      .map((img, index) => ({
+        ...img,
+        isPrimary: index === 0,
+        displayOrder: index,
+      }));
+
+    if (!editingId) {
+      setPersonImages(normalized);
+      setImagesDirty(true);
+      return;
+    }
+
+    setImageBusy(true);
+    setError("");
+    try {
+      const body = {
+        ...buildScalarBody(),
+        images: serializeImages(normalized, form.displayName),
+      };
+      const updated = await peopleService.update(editingId, body);
+      setPersonImages(updated.images || normalized);
+      setExistingRoles(updated.roles || existingRoles);
+      setImagesDirty(false);
+      setMessage("Imagen quitada.");
+      toast.push({ type: "success", message: "Imagen quitada." });
+      dispatch(fetchAdminPeople());
+    } catch (err) {
+      setError(err.message || "No se pudo quitar la imagen");
+    } finally {
+      setImageBusy(false);
+    }
   }
 
   async function onSubmit(e) {
@@ -95,44 +361,102 @@ export function AdminPeoplePage() {
     setError("");
     setMessage("");
     setSaving(true);
-    const body = {
-      firstName: form.firstName || null,
-      lastName: form.lastName || null,
-      status: form.status,
-      translations: [
-        {
-          locale: "es",
-          displayName: form.displayName,
-          slug: form.slug || slugify(form.displayName),
-          shortBio: form.shortBio || null,
-          biography: form.biography || null,
-          birthPlace: form.birthPlace || null,
-        },
-      ],
-      roles: [{ role: form.role, displayOrder: 0 }],
-      images: [],
-    };
+
+    const body = buildScalarBody();
+
+    if (!editingId) {
+      // Create: [] o con las imágenes seleccionadas.
+      body.images = serializeImages(personImages, form.displayName);
+    } else if (imagesDirty) {
+      // Update: solo si se tocaron imágenes; nunca images:[] por accidente.
+      body.images = serializeImages(personImages, form.displayName);
+    }
+    // Si no imagesDirty en update → omitir clave images por completo.
+
     const action = editingId
       ? await dispatch(updatePerson({ id: editingId, body }))
       : await dispatch(createPerson(body));
-    setSaving(false);
+
     if (action.meta.requestStatus === "rejected") {
-      setError(action.payload?.message || "Error al guardar");
+      setSaving(false);
+      setError(action.payload?.message || "No se pudo guardar la persona");
       return;
     }
-    setMessage(editingId ? "Persona actualizada." : "Persona creada.");
-    reset();
+
+    setSaving(false);
+    const successMsg = editingId ? "Persona actualizada." : "Persona creada.";
+    setMessage(successMsg);
+    toast.push({ type: "success", message: successMsg });
+    setImagesDirty(false);
     dispatch(fetchAdminPeople());
+    dispatch(fetchAdminMedia());
+    setTimeout(() => closeModal(), 450);
   }
 
+  async function onArchive(item) {
+    const ok = await confirm.ask({
+      title: "Archivar persona",
+      message: `¿Archivar «${nameOf(item)}»? Dejará de aparecer en el sitio público.`,
+      confirmLabel: "Archivar",
+    });
+    if (!ok) return;
+
+    const previousStatus = item.status || "DRAFT";
+    const action = await dispatch(archivePerson(item.id));
+    if (action.meta.requestStatus === "rejected") {
+      toast.push({
+        type: "error",
+        message: action.payload?.message || "No se pudo archivar",
+      });
+      return;
+    }
+    if (editingId === item.id) closeModal();
+    toast.push({
+      type: "success",
+      message: "Persona archivada.",
+      undo: async () => {
+        await dispatch(updatePerson({ id: item.id, body: { status: previousStatus } }));
+        dispatch(fetchAdminPeople());
+      },
+    });
+  }
+
+  const mediaOptions = media.filter(
+    (m) => !personImages.some((img) => (img.mediaId || img.media?.id) === m.id),
+  );
+
   const columns = [
+    {
+      key: "thumb",
+      label: "",
+      render: (row) => {
+        const src = thumbUrl(row);
+        return src ? (
+          <img
+            src={src}
+            alt=""
+            className="h-11 w-11 object-cover"
+            style={{ borderRadius: "var(--radius-sm)" }}
+            width={44}
+            height={44}
+          />
+        ) : (
+          <div
+            className="flex h-11 w-11 items-center justify-center bg-[var(--admin-bg)] text-[10px] text-[var(--admin-text-muted)]"
+            style={{ borderRadius: "var(--radius-sm)" }}
+          >
+            —
+          </div>
+        );
+      },
+    },
     {
       key: "name",
       label: "Persona",
       render: (row) => (
         <div>
-          <p className="font-medium text-azul-petroleo">{nameOf(row)}</p>
-          <p className="text-xs text-texto/65">{roleLabel(row)}</p>
+          <p className="font-medium text-[var(--admin-text)]">{nameOf(row)}</p>
+          <p className="text-xs text-[var(--admin-text-muted)]">{roleLabel(row)}</p>
         </div>
       ),
     },
@@ -145,17 +469,13 @@ export function AdminPeoplePage() {
       key: "actions",
       label: "",
       render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button type="button" className="text-sm text-celeste-cielo" onClick={() => load(row)}>
-            Editar
-          </button>
-          <button
-            type="button"
-            className="text-sm text-naranja-libro"
-            onClick={() => dispatch(archivePerson(row.id))}
-          >
-            Archivar
-          </button>
+        <div className="flex justify-end gap-1 whitespace-nowrap">
+          <AdminIconButton label="Editar" onClick={() => openEdit(row)}>
+            ✎
+          </AdminIconButton>
+          <AdminIconButton label="Archivar" danger onClick={() => onArchive(row)}>
+            ⌫
+          </AdminIconButton>
         </div>
       ),
     },
@@ -163,76 +483,159 @@ export function AdminPeoplePage() {
 
   return (
     <div>
+      {confirm.dialog}
+
       <AdminPageHeader
         title="Personas"
-        subtitle="Santos, beatos y figuras destacadas del libro y del sitio."
+        subtitle="Santos, beatos y figuras destacadas. Datos desde GET /admin/people."
+        actions={
+          <AdminButton tamano="sm" onClick={openCreate}>
+            + Nueva persona
+          </AdminButton>
+        }
       />
-      <div className="mb-4">
-        <AdminSearch value={query} onChange={setQuery} placeholder="Buscar persona…" />
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <AdminStatCard label="Total personas" value={stats.total} hint="En el panel admin" />
+        <AdminStatCard
+          label="Publicadas"
+          value={stats.published}
+          hint="Visibles en el sitio"
+          accent="petroleo"
+        />
+        <AdminStatCard
+          label="Borradores"
+          value={stats.drafts}
+          hint="Sin publicar"
+          accent="naranja"
+        />
       </div>
-      <div className="grid gap-8 xl:grid-cols-2">
-        <AdminTable columns={columns} rows={filtered} empty="No hay personas cargadas." />
-        <form onSubmit={onSubmit}>
-          <AdminPanel
-            title={editingId ? "Editar persona" : "Nueva persona"}
-            footer={
-              <>
-                <Boton type="submit" disabled={saving}>
-                  {saving ? "Guardando…" : "Guardar"}
-                </Boton>
-                {editingId ? (
-                  <Boton type="button" variante="secundario" onClick={reset}>
-                    Cancelar
-                  </Boton>
-                ) : null}
-              </>
-            }
-          >
+
+      <AdminToolbar
+        search={
+          <AdminSearch
+            value={pager.query}
+            onChange={pager.setQuery}
+            placeholder="Buscar persona, rol o estado…"
+          />
+        }
+      >
+        <AdminSelect
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            pager.setPage(1);
+          }}
+          aria-label="Filtrar por estado"
+        >
+          <option value="">Todos</option>
+          <option value="PUBLISHED">PUBLISHED</option>
+          <option value="DRAFT">DRAFT</option>
+          <option value="ARCHIVED">ARCHIVED</option>
+        </AdminSelect>
+      </AdminToolbar>
+
+      <AdminTable
+        columns={columns}
+        rows={pager.pageItems}
+        empty="Todavía no hay personas. Creá la primera con «Nueva persona»."
+        emptyAction={
+          <AdminButton tamano="sm" onClick={openCreate}>
+            Creá la primera
+          </AdminButton>
+        }
+      />
+      <AdminPagination
+        page={pager.page}
+        totalPages={pager.totalPages}
+        from={pager.from}
+        to={pager.to}
+        total={pager.total}
+        onPageChange={pager.setPage}
+      />
+
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title={editingId ? "Editar persona" : "Nueva persona"}
+        size="lg"
+        footer={
+          <AdminModalActions
+            formId="person-form"
+            onCancel={closeModal}
+            saving={saving || loadingDetail}
+            submitLabel="Guardar"
+          />
+        }
+      >
+        {loadingDetail ? (
+          <p className="py-8 text-center text-sm text-[var(--admin-text-muted)]">
+            Cargando persona…
+          </p>
+        ) : (
+          <form id="person-form" onSubmit={onSubmit}>
             <AdminSection title="Identidad">
               <AdminField label="Nombre para mostrar" required span={2}>
                 <AdminInput
                   required
                   value={form.displayName}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      displayName: e.target.value,
-                      slug: editingId ? f.slug : slugify(e.target.value),
-                    }))
-                  }
-                />
-              </AdminField>
-              <AdminField label="Nombre">
-                <AdminInput
-                  value={form.firstName}
-                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                />
-              </AdminField>
-              <AdminField label="Apellido">
-                <AdminInput
-                  value={form.lastName}
-                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                  onChange={(e) => setField("displayName", e.target.value)}
                 />
               </AdminField>
               <AdminField label="Slug" required>
                 <AdminInput
                   required
                   value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  onChange={(e) => setField("slug", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Nombre">
+                <AdminInput
+                  value={form.firstName}
+                  onChange={(e) => setField("firstName", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Apellido">
+                <AdminInput
+                  value={form.lastName}
+                  onChange={(e) => setField("lastName", e.target.value)}
                 />
               </AdminField>
               <AdminField label="Lugar de nacimiento">
                 <AdminInput
                   value={form.birthPlace}
-                  onChange={(e) => setForm((f) => ({ ...f, birthPlace: e.target.value }))}
+                  onChange={(e) => setField("birthPlace", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Fecha de nacimiento">
+                <AdminInput
+                  type="date"
+                  value={form.birthDate}
+                  onChange={(e) => setField("birthDate", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Fecha de fallecimiento">
+                <AdminInput
+                  type="date"
+                  value={form.deathDate}
+                  onChange={(e) => setField("deathDate", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Nacionalidad (código ISO, 2 letras)">
+                <AdminInput
+                  value={form.nationalityCode}
+                  maxLength={2}
+                  placeholder="AR"
+                  onChange={(e) => setField("nationalityCode", e.target.value)}
                 />
               </AdminField>
             </AdminSection>
+
             <AdminSection title="Rol y estado">
               <AdminField label="Rol" required>
                 <AdminSelect
                   value={form.role}
-                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                  onChange={(e) => setField("role", e.target.value)}
                 >
                   <option value="SAINT">Santo</option>
                   <option value="BLESSED">Beato</option>
@@ -242,7 +645,7 @@ export function AdminPeoplePage() {
               <AdminField label="Estado" required>
                 <AdminSelect
                   value={form.status}
-                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                  onChange={(e) => setField("status", e.target.value)}
                 >
                   <option value="DRAFT">Borrador</option>
                   <option value="PUBLISHED">Publicado</option>
@@ -250,29 +653,128 @@ export function AdminPeoplePage() {
                 </AdminSelect>
               </AdminField>
             </AdminSection>
+
             <AdminSection title="Biografía">
               <AdminField label="Bio corta" span={2}>
                 <AdminTextarea
                   rows={3}
                   value={form.shortBio}
-                  onChange={(e) => setForm((f) => ({ ...f, shortBio: e.target.value }))}
+                  onChange={(e) => setField("shortBio", e.target.value)}
                 />
               </AdminField>
-              <AdminField label="Biografía completa" span={2} hint="Podés usar texto enriquecido simple.">
+              <AdminField label="Biografía completa" span={2}>
                 <AdminTextarea
                   rows={6}
                   value={form.biography}
-                  onChange={(e) => setForm((f) => ({ ...f, biography: e.target.value }))}
+                  onChange={(e) => setField("biography", e.target.value)}
                 />
               </AdminField>
             </AdminSection>
-            <div className="space-y-2 py-4">
+
+            <AdminSection
+              title="Imágenes"
+              description={
+                editingId
+                  ? "People no tiene endpoints de imagen: agregar/quitar hace PATCH con el array completo (roles + translations + images). Guardar ficha sin tocar imágenes omite la clave images."
+                  : "Opcional al crear. Si no elegís ninguna, se envía images: []."
+              }
+            >
+              <div className="sm:col-span-2 space-y-3">
+                {personImages.length === 0 ? (
+                  <p className="text-sm text-[var(--admin-text-muted)]">
+                    Todavía no hay imágenes asociadas.
+                  </p>
+                ) : (
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {personImages.map((img) => {
+                      const mid = img.mediaId || img.media?.id;
+                      const src = mediaUrl(img) || thumbUrl(img);
+                      return (
+                        <li
+                          key={img.id || mid}
+                          className="flex gap-3 border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3"
+                          style={{ borderRadius: "var(--radius-md)" }}
+                        >
+                          {src ? (
+                            <img
+                              src={src}
+                              alt=""
+                              className="h-12 w-12 shrink-0 object-cover"
+                              width={48}
+                              height={48}
+                              style={{ borderRadius: "var(--radius-sm)" }}
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--admin-bg)] text-xs text-[var(--admin-text-muted)]">
+                              —
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {img.isPrimary ? (
+                                <span className="border border-[var(--admin-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+                                  Primaria
+                                </span>
+                              ) : null}
+                              {imageCaption(img) ? (
+                                <span className="truncate text-xs text-[var(--admin-text-muted)]">
+                                  {imageCaption(img)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="mt-2">
+                              <AdminButton
+                                variante="danger"
+                                tamano="sm"
+                                type="button"
+                                disabled={imageBusy}
+                                onClick={() => onRemoveImage(mid)}
+                              >
+                                Quitar
+                              </AdminButton>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <AdminField label="Media de la biblioteca" className="min-w-0 flex-1">
+                    <AdminSelect
+                      value={selectedMediaId}
+                      onChange={(e) => setSelectedMediaId(e.target.value)}
+                      disabled={imageBusy}
+                    >
+                      <option value="">Elegí una imagen…</option>
+                      {mediaOptions.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.originalFilename || m.id}
+                        </option>
+                      ))}
+                    </AdminSelect>
+                  </AdminField>
+                  <AdminButton
+                    variante="secondary"
+                    tamano="sm"
+                    type="button"
+                    disabled={!selectedMediaId || imageBusy}
+                    onClick={onAddImage}
+                  >
+                    Agregar imagen
+                  </AdminButton>
+                </div>
+              </div>
+            </AdminSection>
+
+            <div className="space-y-2 py-3">
               {error ? <AdminAlert type="error">{error}</AdminAlert> : null}
               {message ? <AdminAlert type="success">{message}</AdminAlert> : null}
             </div>
-          </AdminPanel>
-        </form>
-      </div>
+          </form>
+        )}
+      </AdminModal>
     </div>
   );
 }

@@ -18,10 +18,8 @@ import {
   PaginaCreditos,
   PaginaEscritores,
   PaginaFrancisco,
-  PaginaPapaLeon,
   PaginaRedes,
   PaginaSantos,
-  PaginaShop,
   PaginaTapa,
   PaginaTresArgentinos,
   PaginaVideo,
@@ -53,11 +51,9 @@ export default function App() {
           <Route path="escritores" element={<PaginaEscritores />} />
           <Route path="santos" element={<PaginaSantos />} />
           <Route path="autor" element={<PaginaAutor />} />
-          <Route path="shop" element={<PaginaShop />} />
           <Route path="video" element={<PaginaVideo />} />
           <Route path="creditos" element={<PaginaCreditos />} />
           <Route path="el-libro" element={<PaginaTapa />} />
-          <Route path="papa-leon" element={<PaginaPapaLeon />} />
           <Route path="redes" element={<PaginaRedes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

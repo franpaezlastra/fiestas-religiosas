@@ -7,7 +7,7 @@ export function AuthorAvatar({ src, alt, size = "lg", className = "" }) {
 
   return (
     <div
-      className={`shrink-0 overflow-hidden rounded-full border-2 border-celeste-cielo/40 bg-papel shadow-[0_8px_24px_rgb(3_62_96_/_0.12)] ${sizeClass} ${className}`}
+      className={`shrink-0 overflow-hidden rounded-full border-2 border-azul-logo/25 bg-papel ${sizeClass} ${className}`}
     >
       <img
         src={src}
