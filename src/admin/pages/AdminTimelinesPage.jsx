@@ -80,26 +80,46 @@ function mapApiEvent(ev, index) {
     title: tr?.title || "",
     dateDescription: tr?.dateDescription || "",
     description: tr?.description || "",
+    images: Array.isArray(ev.images) ? ev.images : [],
     open: false,
   };
 }
 
 function eventsToPayload(events) {
-  return events.map((ev, index) => ({
-    startDate: ev.startDate || null,
-    endDate: ev.endDate || null,
-    displayOrder: Number(ev.displayOrder) || index,
-    status: ev.status || "PUBLISHED",
-    translations: [
-      {
-        locale: "es",
-        title: ev.title.trim(),
-        description: ev.description.trim() || null,
-        dateDescription: ev.dateDescription.trim() || String(ev.startDate || index + 1),
-      },
-    ],
-    images: [],
-  }));
+  return events.map((ev, index) => {
+    const row = {
+      startDate: ev.startDate || null,
+      endDate: ev.endDate || null,
+      displayOrder: Number(ev.displayOrder) || index,
+      status: ev.status || "PUBLISHED",
+      translations: [
+        {
+          locale: "es",
+          title: ev.title.trim(),
+          description: ev.description.trim() || null,
+          dateDescription: ev.dateDescription.trim() || String(ev.startDate || index + 1),
+        },
+      ],
+    };
+    // Preservar imágenes existentes; nunca mandar [] al pedo (borra la galería del hito).
+    if (Array.isArray(ev.images) && ev.images.length > 0) {
+      row.images = ev.images
+        .map((img, i) => {
+          const mediaId = img.mediaId || img.media?.id;
+          if (!mediaId) return null;
+          return {
+            mediaId,
+            isPrimary: Boolean(img.isPrimary) || i === 0,
+            displayOrder: img.displayOrder ?? i,
+            translations: img.translations?.length
+              ? img.translations
+              : [{ locale: "es", caption: null, altText: null }],
+          };
+        })
+        .filter(Boolean);
+    }
+    return row;
+  });
 }
 
 export function AdminTimelinesPage() {
@@ -474,6 +494,7 @@ export function AdminTimelinesPage() {
             onCancel={closeModal}
             saving={saving || loadingDetail}
             submitLabel="Guardar"
+            dirty={eventsDirty}
           />
         }
       >

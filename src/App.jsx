@@ -18,6 +18,7 @@ import {
   PaginaCreditos,
   PaginaEscritores,
   PaginaFrancisco,
+  PaginaGaleria,
   PaginaRedes,
   PaginaSantos,
   PaginaTapa,
@@ -46,6 +47,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Inicio />} />
           <Route path="mapa" element={<PaginaMapa />} />
+          <Route path="galeria" element={<PaginaGaleria />} />
           <Route path="francisco" element={<PaginaFrancisco />} />
           <Route path="tres-argentinos" element={<PaginaTresArgentinos />} />
           <Route path="escritores" element={<PaginaEscritores />} />

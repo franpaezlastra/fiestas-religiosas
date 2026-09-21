@@ -20,8 +20,24 @@ export const celebrationsService = {
   update: (id, body) =>
     api(`/admin/celebrations/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   archive: (id) => api(`/admin/celebrations/${id}`, { method: "DELETE" }),
-  reorder: (ids) =>
-    api("/admin/celebrations/reorder", { method: "PUT", body: JSON.stringify({ ids }) }),
+  /** Preferí /reorder; si el API no lo tiene (404), cae a PATCH displayOrder secuencial. */
+  reorder: async (ids) => {
+    try {
+      return await api("/admin/celebrations/reorder", {
+        method: "PUT",
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      if (err.status !== 404) throw err;
+      for (let i = 0; i < ids.length; i += 1) {
+        await api(`/admin/celebrations/${ids[i]}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayOrder: i }),
+        });
+      }
+      return { ids };
+    }
+  },
   addImage: (id, body) =>
     api(`/admin/celebrations/${id}/images`, { method: "POST", body: JSON.stringify(body) }),
   updateImage: (celebrationId, imageId, body) =>
@@ -29,13 +45,32 @@ export const celebrationsService = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
-  reorderImages: (celebrationId, ids) =>
-    api(`/admin/celebrations/${celebrationId}/images/reorder`, {
-      method: "PUT",
-      body: JSON.stringify({ ids }),
-    }),
+  reorderImages: async (celebrationId, ids) => {
+    try {
+      return await api(`/admin/celebrations/${celebrationId}/images/reorder`, {
+        method: "PUT",
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      if (err.status !== 404) throw err;
+      for (let i = 0; i < ids.length; i += 1) {
+        await api(`/admin/celebrations/${celebrationId}/images/${ids[i]}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayOrder: i }),
+        });
+      }
+      return { ids };
+    }
+  },
   removeImage: (celebrationId, imageId) =>
     api(`/admin/celebrations/${celebrationId}/images/${imageId}`, { method: "DELETE" }),
+  addBook: (celebrationId, body) =>
+    api(`/admin/celebrations/${celebrationId}/books`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  removeBook: (celebrationId, bookId) =>
+    api(`/admin/celebrations/${celebrationId}/books/${bookId}`, { method: "DELETE" }),
 };
 
 export const peopleService = {
@@ -61,8 +96,23 @@ export const timelinesService = {
   update: (id, body) =>
     api(`/admin/timelines/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   archive: (id) => api(`/admin/timelines/${id}`, { method: "DELETE" }),
-  reorder: (ids) =>
-    api("/admin/timelines/reorder", { method: "PUT", body: JSON.stringify({ ids }) }),
+  reorder: async (ids) => {
+    try {
+      return await api("/admin/timelines/reorder", {
+        method: "PUT",
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      if (err.status !== 404) throw err;
+      for (let i = 0; i < ids.length; i += 1) {
+        await api(`/admin/timelines/${ids[i]}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayOrder: i }),
+        });
+      }
+      return { ids };
+    }
+  },
 };
 
 export const videosService = {
@@ -77,10 +127,15 @@ export const videosService = {
 export const booksService = {
   publicList: () => api("/public/books?locale=es"),
   adminList: () => api("/admin/books"),
+  adminGet: (id) => api(`/admin/books/${id}`),
   create: (body) => api("/admin/books", { method: "POST", body: JSON.stringify(body) }),
   update: (id, body) =>
     api(`/admin/books/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   archive: (id) => api(`/admin/books/${id}`, { method: "DELETE" }),
+  addPerson: (bookId, body) =>
+    api(`/admin/books/${bookId}/people`, { method: "POST", body: JSON.stringify(body) }),
+  removePerson: (bookId, personId) =>
+    api(`/admin/books/${bookId}/people/${personId}`, { method: "DELETE" }),
 };
 
 export const socialService = {

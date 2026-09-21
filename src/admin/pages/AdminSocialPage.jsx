@@ -190,6 +190,7 @@ export function AdminSocialPage() {
             onCancel={closeModal}
             saving={saving}
             submitLabel="Guardar"
+            dirty={dirty}
           />
         }
       >

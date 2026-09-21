@@ -8,6 +8,7 @@ import {
   updateCelebration,
 } from "../../redux/slices/celebrationsSlice";
 import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
+import { fetchAdminBooks } from "../../redux/slices/booksSlice";
 import { fetchProvinces } from "../../redux/slices/provincesSlice";
 import { slugify } from "../../utils/slugify";
 import { useAdminPagination } from "../hooks/useAdminPagination";
@@ -53,6 +54,7 @@ const MESES = [
 const emptyForm = {
   name: "",
   slug: "",
+  description: "",
   shortDescription: "",
   locality: "",
   placeName: "",
@@ -73,10 +75,38 @@ const emptyForm = {
   endDate: "",
   scheduleType: "FIXED_ANNUAL",
   primaryMediaId: "",
+  // Asociación a libro (create o borrador local en edit)
+  bookId: "",
+  mapNumber: "",
+  chapterNumber: "",
+  pageReference: "",
 };
 
 function translationName(item) {
   return item.translations?.find((t) => t.locale === "es")?.name || "Sin nombre";
+}
+
+function bookTitle(book) {
+  if (!book) return "Libro";
+  return (
+    book.translations?.find((t) => t.locale === "es")?.title ||
+    book.title ||
+    book.isbn ||
+    book.id
+  );
+}
+
+function normalizeBookAssociations(detail) {
+  const raw = detail?.bookAssociations || detail?.books || [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((row) => ({
+    id: row.id,
+    bookId: row.bookId || row.book?.id,
+    mapNumber: row.mapNumber ?? null,
+    chapterNumber: row.chapterNumber ?? null,
+    pageReference: row.pageReference ?? null,
+    book: row.book || null,
+  })).filter((row) => row.bookId);
 }
 
 function provinceName(item) {
@@ -103,6 +133,7 @@ function formFromDetail(detail) {
   return {
     name: tr?.name || "",
     slug: tr?.slug || "",
+    description: tr?.description || "",
     shortDescription: tr?.shortDescription || "",
     locality: detail.locality || "",
     placeName: detail.placeName || "",
@@ -123,6 +154,10 @@ function formFromDetail(detail) {
     endDate: schedule?.endDate ? String(schedule.endDate).slice(0, 10) : "",
     scheduleType: schedule?.scheduleType || "FIXED_ANNUAL",
     primaryMediaId: primary?.mediaId || "",
+    bookId: "",
+    mapNumber: "",
+    chapterNumber: "",
+    pageReference: "",
   };
 }
 
@@ -133,12 +168,15 @@ export function AdminCelebrationsPage() {
   const items = useSelector((state) => state.celebrations.adminItems);
   const provinces = useSelector((state) => state.provinces.items);
   const media = useSelector((state) => state.media.items);
+  const books = useSelector((state) => state.books.adminItems);
 
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
+  const [bookAssociations, setBookAssociations] = useState([]);
   const [galleryMediaId, setGalleryMediaId] = useState("");
   const [galleryBusy, setGalleryBusy] = useState(false);
+  const [booksBusy, setBooksBusy] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -152,6 +190,7 @@ export function AdminCelebrationsPage() {
     dispatch(fetchAdminCelebrations());
     dispatch(fetchProvinces());
     dispatch(fetchAdminMedia());
+    dispatch(fetchAdminBooks());
   }, [dispatch]);
 
   const statusFiltered = useMemo(() => {
@@ -203,6 +242,7 @@ export function AdminCelebrationsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setGalleryImages([]);
+    setBookAssociations([]);
     setGalleryMediaId("");
     setMessage("");
     setError("");
@@ -221,10 +261,12 @@ export function AdminCelebrationsPage() {
       const detail = await celebrationsService.adminGet(item.id);
       setForm(formFromDetail(detail));
       setGalleryImages(detail.images || []);
+      setBookAssociations(normalizeBookAssociations(detail));
     } catch (err) {
       setError(err.message || "No se pudo cargar la fiesta");
       setForm(formFromDetail(item));
       setGalleryImages(item.images || []);
+      setBookAssociations(normalizeBookAssociations(item));
     } finally {
       setLoadingDetail(false);
     }
@@ -235,6 +277,7 @@ export function AdminCelebrationsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setGalleryImages([]);
+    setBookAssociations([]);
     setGalleryMediaId("");
     setError("");
     setMessage("");
@@ -244,6 +287,7 @@ export function AdminCelebrationsPage() {
   async function refreshGallery(celebrationId) {
     const detail = await celebrationsService.adminGet(celebrationId);
     setGalleryImages(detail.images || []);
+    setBookAssociations(normalizeBookAssociations(detail));
     setForm(formFromDetail(detail));
     dispatch(fetchAdminCelebrations());
     return detail;
@@ -337,8 +381,56 @@ export function AdminCelebrationsPage() {
     }
   }
 
+  function buildBookAssociationFromForm() {
+    if (!form.bookId) return null;
+    const assoc = { bookId: form.bookId };
+    if (form.mapNumber.trim()) assoc.mapNumber = Number(form.mapNumber);
+    if (form.chapterNumber.trim()) assoc.chapterNumber = Number(form.chapterNumber);
+    if (form.pageReference.trim()) assoc.pageReference = form.pageReference.trim();
+    return assoc;
+  }
+
+  async function onAddBookAssociation() {
+    if (!editingId || !form.bookId) return;
+    const body = buildBookAssociationFromForm();
+    if (!body) return;
+    setBooksBusy(true);
+    setError("");
+    try {
+      await celebrationsService.addBook(editingId, body);
+      setForm((prev) => ({
+        ...prev,
+        bookId: "",
+        mapNumber: "",
+        chapterNumber: "",
+        pageReference: "",
+      }));
+      await refreshGallery(editingId);
+      toast.push({ type: "success", message: "Libro asociado." });
+    } catch (err) {
+      setError(err.message || "No se pudo asociar el libro");
+    } finally {
+      setBooksBusy(false);
+    }
+  }
+
+  async function onRemoveBookAssociation(bookId) {
+    if (!editingId || !bookId) return;
+    setBooksBusy(true);
+    setError("");
+    try {
+      await celebrationsService.removeBook(editingId, bookId);
+      await refreshGallery(editingId);
+      toast.push({ type: "success", message: "Asociación de libro quitada." });
+    } catch (err) {
+      setError(err.message || "No se pudo quitar el libro");
+    } finally {
+      setBooksBusy(false);
+    }
+  }
+
   function buildSchedules() {
-    if (!form.dateDescription && form.scheduleType !== "YEAR_ROUND") return [];
+    if (!form.dateDescription.trim() && form.scheduleType !== "YEAR_ROUND") return [];
 
     const base = {
       scheduleType: form.scheduleType,
@@ -346,7 +438,7 @@ export function AdminCelebrationsPage() {
       translations: [
         {
           locale: "es",
-          dateDescription: form.dateDescription || "Todo el año",
+          dateDescription: form.dateDescription.trim() || "Todo el año",
         },
       ],
     };
@@ -356,12 +448,20 @@ export function AdminCelebrationsPage() {
     if (["FIXED_ANNUAL", "ANNUAL_RANGE"].includes(form.scheduleType)) {
       base.startMonth = form.startMonth ? Number(form.startMonth) : null;
       base.startDay = form.startDay ? Number(form.startDay) : null;
+      base.endMonth = null;
+      base.endDay = null;
+      base.startDate = null;
+      base.endDate = null;
     }
     if (form.scheduleType === "ANNUAL_RANGE") {
       base.endMonth = form.endMonth ? Number(form.endMonth) : null;
       base.endDay = form.endDay ? Number(form.endDay) : null;
     }
     if (["VARIABLE_ANNUAL", "ONE_TIME"].includes(form.scheduleType)) {
+      base.startMonth = null;
+      base.startDay = null;
+      base.endMonth = null;
+      base.endDay = null;
       base.startDate = form.startDate || null;
       base.endDate = form.endDate || null;
     }
@@ -372,8 +472,8 @@ export function AdminCelebrationsPage() {
     const schedules = buildSchedules();
     const body = {
       provinceId: form.provinceId || null,
-      locality: form.locality || null,
-      placeName: form.placeName || null,
+      locality: form.locality.trim() || null,
+      placeName: form.placeName.trim() || null,
       latitude: form.latitude !== "" ? Number(form.latitude) : null,
       longitude: form.longitude !== "" ? Number(form.longitude) : null,
       status: form.status,
@@ -390,22 +490,33 @@ export function AdminCelebrationsPage() {
           locale: "es",
           name: form.name.trim(),
           slug: (form.slug || slugify(form.name)).trim(),
+          description: form.description.trim() || null,
           shortDescription: form.shortDescription.trim() || null,
         },
       ],
     };
 
-    // Create: siempre schedules; images solo si hay primaria (o []).
-    // Update: schedules solo si hay contenido; NUNCA images; NUNCA schedules: [].
+    // Create: schedules + images + bookAssociations (Swagger CelebrationInput).
+    // Update: schedules solo si hay contenido; NUNCA images ni bookAssociations en PATCH.
     if (!editingId) {
       body.schedules = schedules;
+      body.bookAssociations = [];
+      const assoc = buildBookAssociationFromForm();
+      if (assoc) body.bookAssociations = [assoc];
+
       if (form.primaryMediaId) {
         body.images = [
           {
             mediaId: form.primaryMediaId,
             isPrimary: true,
             displayOrder: 0,
-            translations: [{ locale: "es", altText: form.name, caption: null }],
+            translations: [
+              {
+                locale: "es",
+                altText: form.name.trim() || null,
+                caption: null,
+              },
+            ],
           },
         ];
       } else {
@@ -583,6 +694,9 @@ export function AdminCelebrationsPage() {
   const galleryMediaOptions = media.filter(
     (m) => !galleryImages.some((img) => img.mediaId === m.id),
   );
+  const bookOptions = books.filter(
+    (b) => !bookAssociations.some((a) => a.bookId === b.id) || b.id === form.bookId,
+  );
 
   return (
     <div>
@@ -722,7 +836,7 @@ export function AdminCelebrationsPage() {
         open={modalOpen}
         onClose={closeModal}
         title={editingId ? "Editar fiesta" : "Nueva fiesta"}
-        subtitle="Identidad, ubicación, fecha, visibilidad e imagen primaria."
+        subtitle="Identidad, ubicación, fecha, visibilidad, imagen y libro (Swagger Celebraciones)."
         size="xl"
         footer={
           <AdminModalActions
@@ -765,8 +879,16 @@ export function AdminCelebrationsPage() {
                 <AdminTextarea
                   value={form.shortDescription}
                   onChange={(e) => setField("shortDescription", e.target.value)}
-                  rows={3}
+                  rows={2}
                   placeholder="Resumen para fichas y previews."
+                />
+              </AdminField>
+              <AdminField label="Descripción" span={2} hint="Texto largo (translations.description).">
+                <AdminTextarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                  rows={4}
+                  placeholder="Descripción completa de la celebración."
                 />
               </AdminField>
             </AdminSection>
@@ -976,6 +1098,104 @@ export function AdminCelebrationsPage() {
                 </figcaption>
               </figure>
             ) : null}
+
+            <AdminSection
+              title="Libro asociado"
+              description={
+                editingId
+                  ? "POST/DELETE /admin/celebrations/{id}/books — no se envía en el PATCH."
+                  : "Opcional en el create (bookAssociations). Número de mapa, capítulo y páginas."
+              }
+            >
+              {editingId && bookAssociations.length > 0 ? (
+                <ul className="sm:col-span-2 space-y-2">
+                  {bookAssociations.map((assoc) => {
+                    const book =
+                      assoc.book || books.find((b) => b.id === assoc.bookId);
+                    return (
+                      <li
+                        key={assoc.id || assoc.bookId}
+                        className="flex flex-wrap items-center justify-between gap-2 border border-[var(--admin-border)] px-3 py-2"
+                      >
+                        <div className="min-w-0 text-sm">
+                          <p className="font-medium text-[var(--admin-text)]">
+                            {bookTitle(book)}
+                          </p>
+                          <p className="text-xs text-[var(--admin-text-muted)]">
+                            {assoc.mapNumber != null ? `Mapa nº ${assoc.mapNumber}` : "Sin nº mapa"}
+                            {assoc.chapterNumber != null
+                              ? ` · Cap. ${assoc.chapterNumber}`
+                              : ""}
+                            {assoc.pageReference ? ` · p. ${assoc.pageReference}` : ""}
+                          </p>
+                        </div>
+                        <AdminButton
+                          type="button"
+                          variante="danger"
+                          tamano="sm"
+                          disabled={booksBusy}
+                          onClick={() => onRemoveBookAssociation(assoc.bookId)}
+                        >
+                          Quitar
+                        </AdminButton>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+
+              <AdminField label="Libro" span={2}>
+                <AdminSelect
+                  value={form.bookId}
+                  onChange={(e) => setField("bookId", e.target.value)}
+                  disabled={booksBusy}
+                >
+                  <option value="">Sin libro</option>
+                  {(editingId ? bookOptions : books).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {bookTitle(b)}
+                    </option>
+                  ))}
+                </AdminSelect>
+              </AdminField>
+              <AdminField label="Nº en el mapa" hint="mapNumber">
+                <AdminInput
+                  type="number"
+                  min={1}
+                  value={form.mapNumber}
+                  onChange={(e) => setField("mapNumber", e.target.value)}
+                  placeholder="ej. 12"
+                />
+              </AdminField>
+              <AdminField label="Capítulo" hint="chapterNumber">
+                <AdminInput
+                  type="number"
+                  min={1}
+                  value={form.chapterNumber}
+                  onChange={(e) => setField("chapterNumber", e.target.value)}
+                  placeholder="ej. 7"
+                />
+              </AdminField>
+              <AdminField label="Páginas" hint="pageReference" span={2}>
+                <AdminInput
+                  value={form.pageReference}
+                  onChange={(e) => setField("pageReference", e.target.value)}
+                  placeholder='ej. "274-279"'
+                />
+              </AdminField>
+              {editingId ? (
+                <div className="sm:col-span-2">
+                  <AdminButton
+                    type="button"
+                    tamano="sm"
+                    disabled={booksBusy || !form.bookId}
+                    onClick={onAddBookAssociation}
+                  >
+                    Asociar libro
+                  </AdminButton>
+                </div>
+              ) : null}
+            </AdminSection>
 
             {editingId ? (
               <AdminSection

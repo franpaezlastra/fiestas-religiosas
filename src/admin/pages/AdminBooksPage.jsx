@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { booksService } from "../../services";
 import {
   archiveBook,
   createBook,
@@ -173,6 +174,39 @@ function contributorsToPayload(contributors) {
     }));
 }
 
+function emptyPersonLink(order = 0) {
+  return {
+    _key: `peo-${Date.now()}-${order}`,
+    personId: "",
+    displayNumber: String(order + 1),
+    chapterNumber: "",
+    pageReference: "",
+    open: true,
+  };
+}
+
+function mapApiPersonLink(link, index) {
+  return {
+    _key: link.id || `peo-${link.personId || index}`,
+    personId: link.personId || link.person?.id || "",
+    displayNumber: link.displayNumber != null ? String(link.displayNumber) : "",
+    chapterNumber: link.chapterNumber != null ? String(link.chapterNumber) : "",
+    pageReference: link.pageReference || "",
+    open: false,
+  };
+}
+
+function peopleToPayload(links) {
+  return links
+    .filter((l) => l.personId && String(l.displayNumber).trim())
+    .map((l) => ({
+      personId: l.personId,
+      displayNumber: Number(l.displayNumber),
+      chapterNumber: l.chapterNumber ? Number(l.chapterNumber) : null,
+      pageReference: (l.pageReference || "").trim() || null,
+    }));
+}
+
 function celebrationsToPayload(links) {
   return links
     .filter((l) => l.celebrationId)
@@ -203,13 +237,16 @@ export function AdminBooksPage() {
   const [images, setImages] = useState([]);
   const [contributors, setContributors] = useState([]);
   const [celebrationLinks, setCelebrationLinks] = useState([]);
+  const [peopleLinks, setPeopleLinks] = useState([]);
   const [imagesDirty, setImagesDirty] = useState(false);
   const [contributorsDirty, setContributorsDirty] = useState(false);
   const [celebrationsDirty, setCelebrationsDirty] = useState(false);
+  const [peopleDirty, setPeopleDirty] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
@@ -241,15 +278,18 @@ export function AdminBooksPage() {
     return { total: items.length, published, draft };
   }, [items]);
 
-  const nestedDirty = imagesDirty || contributorsDirty || celebrationsDirty;
+  const nestedDirty =
+    imagesDirty || contributorsDirty || celebrationsDirty || peopleDirty;
 
   function resetNested() {
     setImages([]);
     setContributors([]);
     setCelebrationLinks([]);
+    setPeopleLinks([]);
     setImagesDirty(false);
     setContributorsDirty(false);
     setCelebrationsDirty(false);
+    setPeopleDirty(false);
   }
 
   function openCreate() {
@@ -257,12 +297,27 @@ export function AdminBooksPage() {
     setForm(emptyForm);
     resetNested();
     setError("");
+    setLoadingDetail(false);
     setModalOpen(true);
   }
 
-  function openEdit(item) {
-    const tr = item.translations?.find((t) => t.locale === "es") || item.translations?.[0];
+  async function openEdit(item) {
+    setError("");
+    setLoadingDetail(true);
+    setModalOpen(true);
     setEditingId(item.id);
+    try {
+      const detail = await booksService.adminGet(item.id);
+      applyBookDetail(detail);
+    } catch {
+      applyBookDetail(item);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  function applyBookDetail(item) {
+    const tr = item.translations?.find((t) => t.locale === "es") || item.translations?.[0];
     setForm({
       isbn: item.isbn || "",
       title: tr?.title || "",
@@ -277,11 +332,11 @@ export function AdminBooksPage() {
     setImages((item.images || []).map(mapApiImage));
     setContributors((item.contributors || []).map(mapApiContributor));
     setCelebrationLinks((item.celebrations || []).map(mapApiCelebration));
+    setPeopleLinks((item.people || item.bookPeople || []).map(mapApiPersonLink));
     setImagesDirty(false);
     setContributorsDirty(false);
     setCelebrationsDirty(false);
-    setError("");
-    setModalOpen(true);
+    setPeopleDirty(false);
   }
 
   function closeModal() {
@@ -340,6 +395,21 @@ export function AdminBooksPage() {
         displayOrder: String(index),
       })),
     );
+  }
+
+  function updatePersonLink(key, patch) {
+    setPeopleDirty(true);
+    setPeopleLinks((list) => list.map((l) => (l._key === key ? { ...l, ...patch } : l)));
+  }
+
+  function removePersonLink(key) {
+    setPeopleDirty(true);
+    setPeopleLinks((list) => list.filter((l) => l._key !== key));
+  }
+
+  function addPersonLink() {
+    setPeopleDirty(true);
+    setPeopleLinks((list) => [...list, emptyPersonLink(list.length)]);
   }
 
   function updateCelebrationLink(key, patch) {
@@ -413,10 +483,12 @@ export function AdminBooksPage() {
       body.images = imagesPayload;
       body.contributors = contributorsToPayload(contributors);
       body.celebrations = celebrationsToPayload(celebrationLinks);
+      body.people = peopleToPayload(peopleLinks);
     } else {
       if (imagesDirty) body.images = imagesPayload;
       if (contributorsDirty) body.contributors = contributorsToPayload(contributors);
       if (celebrationsDirty) body.celebrations = celebrationsToPayload(celebrationLinks);
+      if (peopleDirty) body.people = peopleToPayload(peopleLinks);
     }
 
     const action = editingId
@@ -602,11 +674,15 @@ export function AdminBooksPage() {
           <AdminModalActions
             formId="book-form"
             onCancel={closeModal}
-            saving={saving}
+            saving={saving || loadingDetail}
             submitLabel="Guardar"
+            dirty={nestedDirty}
           />
         }
       >
+        {loadingDetail ? (
+          <p className="py-8 text-sm text-[var(--admin-text-muted)]">Cargando libro…</p>
+        ) : (
         <form id="book-form" onSubmit={onSubmit}>
           {error ? (
             <div className="mb-4">
@@ -897,6 +973,116 @@ export function AdminBooksPage() {
             )}
           </section>
 
+          {/* Personas del libro (mapa / santos) */}
+          <section className="py-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--admin-text)]">
+                  Personas del libro
+                </h3>
+                <p className="mt-1 text-xs text-[var(--admin-text-muted)]">
+                  Campo Swagger <code>people</code>: displayNumber (nº en mapa de santos), capítulo y páginas.
+                  {editingId && !peopleDirty ? " Sin cambios: no se envía al guardar." : ""}
+                </p>
+              </div>
+              <AdminButton variante="secondary" tamano="sm" type="button" onClick={addPersonLink}>
+                + Persona
+              </AdminButton>
+            </div>
+            {peopleLinks.length === 0 ? (
+              <div
+                className="border border-dashed border-[var(--admin-border)] px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]"
+                style={{ borderRadius: "var(--radius-md)" }}
+              >
+                Sin personas asociadas por número de mapa.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {peopleLinks.map((link, index) => (
+                  <div key={link._key} className="admin-nested-card">
+                    <button
+                      type="button"
+                      className="admin-nested-card__head"
+                      onClick={() => updatePersonLink(link._key, { open: !link.open })}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-[var(--admin-text)]">
+                          {personLabel(people.find((p) => p.id === link.personId))} · nº{" "}
+                          {link.displayNumber || "—"}
+                        </span>
+                        <span className="block text-xs text-[var(--admin-text-muted)]">
+                          Persona {index + 1}
+                        </span>
+                      </span>
+                      <span className="text-[var(--admin-text-muted)]">
+                        {link.open ? "▾" : "▸"}
+                      </span>
+                    </button>
+                    {link.open ? (
+                      <div className="admin-nested-card__body">
+                        <AdminField label="Persona" required span={2}>
+                          <AdminSelect
+                            required
+                            value={link.personId}
+                            onChange={(e) =>
+                              updatePersonLink(link._key, { personId: e.target.value })
+                            }
+                          >
+                            <option value="">Elegir persona…</option>
+                            {people.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {personLabel(p)}
+                              </option>
+                            ))}
+                          </AdminSelect>
+                        </AdminField>
+                        <AdminField label="Nº visible" required>
+                          <AdminInput
+                            required
+                            type="number"
+                            min={1}
+                            value={link.displayNumber}
+                            onChange={(e) =>
+                              updatePersonLink(link._key, { displayNumber: e.target.value })
+                            }
+                          />
+                        </AdminField>
+                        <AdminField label="Capítulo">
+                          <AdminInput
+                            type="number"
+                            min={1}
+                            value={link.chapterNumber}
+                            onChange={(e) =>
+                              updatePersonLink(link._key, { chapterNumber: e.target.value })
+                            }
+                          />
+                        </AdminField>
+                        <AdminField label="Páginas" span={2}>
+                          <AdminInput
+                            value={link.pageReference}
+                            onChange={(e) =>
+                              updatePersonLink(link._key, { pageReference: e.target.value })
+                            }
+                          />
+                        </AdminField>
+                        <div className="sm:col-span-2">
+                          <AdminButton
+                            variante="danger"
+                            tamano="sm"
+                            type="button"
+                            onClick={() => removePersonLink(link._key)}
+                          >
+                            Quitar
+                          </AdminButton>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* Fiestas vinculadas */}
           <section className="py-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -1028,6 +1214,7 @@ export function AdminBooksPage() {
             )}
           </section>
         </form>
+        )}
       </AdminModal>
     </div>
   );

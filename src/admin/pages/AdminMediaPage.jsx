@@ -47,11 +47,12 @@ function metaFromItem(item) {
 }
 
 function buildMetaBody(form) {
-  const body = {};
-  if (form.title.trim()) body.title = form.title.trim();
-  if (form.altText.trim()) body.altText = form.altText.trim();
-  if (form.photographer.trim()) body.photographer = form.photographer.trim();
-  if (form.rightsHolder.trim()) body.rightsHolder = form.rightsHolder.trim();
+  const body = {
+    title: form.title.trim(),
+    altText: form.altText.trim(),
+    photographer: form.photographer.trim(),
+    rightsHolder: form.rightsHolder.trim(),
+  };
   if (form.takenYear.trim()) {
     const y = Number(form.takenYear);
     if (!Number.isNaN(y)) body.takenYear = y;
@@ -306,6 +307,7 @@ export function AdminMediaPage() {
             onCancel={() => setUploadOpen(false)}
             saving={busy}
             submitLabel={busy ? "Subiendo…" : "Subir"}
+            dirty={Boolean(pendingFiles?.length)}
           />
         }
       >
@@ -387,6 +389,7 @@ export function AdminMediaPage() {
             onCancel={closeEdit}
             saving={saving}
             submitLabel="Guardar"
+            dirty={dirty}
           />
         }
       >

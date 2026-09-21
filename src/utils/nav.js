@@ -6,6 +6,12 @@ export const NAV_PRINCIPAL = [
     resumen: "Mapa interactivo de Argentina y el calendario mes a mes del libro.",
   },
   {
+    to: "/galeria",
+    label: "Galería",
+    kicker: "Fotos del libro",
+    resumen: "Álbumes por fiesta: las fotografías de las celebraciones, para consulta.",
+  },
+  {
     to: "/francisco",
     label: "Papa Francisco",
     kicker: "Homenaje",

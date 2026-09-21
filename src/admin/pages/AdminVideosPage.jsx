@@ -42,6 +42,34 @@ function titleOf(video) {
   return video.translations?.find((t) => t.locale === "es")?.title || video.externalId;
 }
 
+/** Acepta ID o URL completa de YouTube → solo el externalId. */
+function parseYoutubeId(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  if (/^[\w-]{11}$/.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (url.hostname.includes("youtu.be")) {
+      return url.pathname.replace(/^\//, "").split("/")[0];
+    }
+    const v = url.searchParams.get("v");
+    if (v) return v;
+    const embed = url.pathname.match(/\/(?:embed|shorts)\/([\w-]{11})/);
+    if (embed) return embed[1];
+  } catch {
+    /* no es URL */
+  }
+  return value;
+}
+
+/** input type="date" manda YYYY-MM-DD; el API pide ISO datetime. */
+function toIsoDateTime(dateOnly) {
+  const d = String(dateOnly || "").trim();
+  if (!d) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return `${d}T00:00:00.000Z`;
+  return d;
+}
+
 export function AdminVideosPage() {
   const dispatch = useDispatch();
   const items = useSelector((state) => state.videos.adminItems);
@@ -118,9 +146,16 @@ export function AdminVideosPage() {
     e.preventDefault();
     setError("");
     setSaving(true);
+    const externalId = parseYoutubeId(form.externalId);
+    if (!externalId) {
+      setError("Poné el ID del video de YouTube o pegá la URL completa.");
+      setSaving(false);
+      return;
+    }
+
     const body = {
       provider: "YOUTUBE",
-      externalId: form.externalId.trim(),
+      externalId,
       displayOrder: Number(form.displayOrder) || 0,
       status: form.status,
       translations: [
@@ -133,7 +168,7 @@ export function AdminVideosPage() {
       body.durationSeconds = null;
     }
     if (form.sourcePublishedAt.trim()) {
-      body.sourcePublishedAt = form.sourcePublishedAt.trim();
+      body.sourcePublishedAt = toIsoDateTime(form.sourcePublishedAt);
     } else if (editingId) {
       body.sourcePublishedAt = null;
     }
@@ -277,22 +312,23 @@ export function AdminVideosPage() {
             onCancel={closeModal}
             saving={saving}
             submitLabel="Guardar"
+            dirty={dirty}
           />
         }
       >
         <form id="video-form" onSubmit={onSubmit}>
           <AdminSection title="YouTube">
             <AdminField
-              label="ID del video"
+              label="ID o URL de YouTube"
               required
               span={2}
-              hint="Lo que va después de v= en la URL."
+              hint="Pegá la URL completa o solo el ID (lo que va después de v=)."
             >
               <AdminInput
                 required
                 value={form.externalId}
                 onChange={(e) => setField("externalId", e.target.value)}
-                placeholder="dQw4w9WgXcQ"
+                placeholder="https://www.youtube.com/watch?v=… o IhXSpDtWFoM"
               />
             </AdminField>
             <AdminField label="Título" required span={2}>

@@ -372,6 +372,19 @@ select:focus-visible {
   object-fit: contain;
 }
 
+.galeria-modal-protected {
+  display: block;
+  max-width: min(920px, 100%);
+  max-height: calc(100vh - 7.5rem);
+}
+
+.galeria-modal-protected img {
+  max-height: calc(100vh - 7.5rem);
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+}
+
 .galeria-modal-foto figcaption {
   display: flex;
   justify-content: space-between;
@@ -379,6 +392,111 @@ select:focus-visible {
   margin-top: 0.75rem;
   color: #ffffff;
   font-size: 0.9rem;
+}
+
+.detalle-fiesta-portada {
+  display: block;
+  width: 100%;
+  height: 160px;
+  background: #f7f3ec;
+}
+
+.detalle-fiesta-portada .protected-image,
+.detalle-fiesta-portada img {
+  width: 100%;
+  height: 100%;
+}
+
+.map-pin-card-img {
+  width: 100%;
+  height: 140px;
+  background: #f7f3ec;
+}
+
+.map-pin-card-img .protected-image,
+.map-pin-card-img img {
+  width: 100%;
+  height: 100%;
+}
+
+.protected-image {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.protected-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.protected-image-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+  cursor: inherit;
+}
+
+.galeria-indice-card {
+  display: block;
+}
+
+.galeria-indice-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f7f3ec;
+}
+
+.galeria-indice-thumb .protected-image,
+.galeria-indice-thumb img {
+  width: 100%;
+  height: 100%;
+}
+
+.galeria-indice-count {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 2;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgb(3 62 96 / 0.82);
+  pointer-events: none;
+}
+
+.galeria-album-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f7f3ec;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+}
+
+.galeria-album-thumb .protected-image,
+.galeria-album-thumb img {
+  width: 100%;
+  height: 100%;
+}
+
+.galeria-album-thumb:hover .protected-image img {
+  transform: scale(1.03);
+  transition: transform 0.35s ease;
 }
 
 .detalle-fiesta img {

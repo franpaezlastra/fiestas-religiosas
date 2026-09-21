@@ -4,13 +4,13 @@ import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ESTILO_FISICO_POLITICO } from "../../utils/estiloMapa";
 import { capituloLabel, clusterFiestas, pinesSeparados } from "../../utils/geo";
+import { Link } from "react-router-dom";
 import { fotoPortada, fotosDe } from "../../utils/galeria";
-import { fiestaNumero, celebrationImageUrls, selectFiestasForUi } from "../../utils/celebrationsAdapter";
+import { fiestaNumero, selectFiestasForUi } from "../../utils/celebrationsAdapter";
 import { fetchPublicCelebrations } from "../../redux/slices/celebrationsSlice";
-import { celebrationsService } from "../../services";
 
 import { Boton } from "../../components/ui/Boton";
-import { GaleriaModal } from "../../components/gallery/GaleriaModal";
+import { ProtectedImage } from "../../components/gallery/ProtectedImage";
 
 const ARG_MAX_BOUNDS = [
 [-88, -62],
@@ -70,35 +70,27 @@ function useFiestas() {
   );
 }
 
-function Detalle({
-  fiestas,
-  onPick,
-  onGaleria
-
-
-
-
-}) {
+function Detalle({ fiestas, onPick }) {
   if (!fiestas.length) {
     return (
       <p className="text-sm">
         Elegí un pin en el mapa o una fiesta de la lista para ver el detalle.
-      </p>);
-
+      </p>
+    );
   }
   return (
     <ul className="flex flex-col gap-3">
       {fiestas.map((f) => {
         const cap = capituloLabel(f.capitulo);
         const portada = fotoPortada(f);
-        const hayGaleria = fotosDe(f).length > 0;
+        const hayFotos = fotosDe(f).length > 0;
         return (
           <li key={f.id} className="detalle-fiesta overflow-hidden border border-azul-logo/30">
-            {portada ?
-            <button type="button" className="block w-full" onClick={() => onGaleria(f)}>
-                <img src={portada} alt="" />
-              </button> :
-            null}
+            {portada ? (
+              <div className="detalle-fiesta-portada">
+                <ProtectedImage src={portada} alt="" className="h-full w-full" />
+              </div>
+            ) : null}
             <div className="p-3">
               <button type="button" className="w-full text-left" onClick={() => onPick(f.id)}>
                 <p className="font-display text-lg text-azul-petroleo">
@@ -114,59 +106,47 @@ function Detalle({
                 {f.fecha ? <p className="mt-1 text-sm">{f.fecha}</p> : null}
               </button>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {cap ?
-                <span className="bg-azul-petroleo px-2 py-0.5 text-xs text-blanco">{cap}</span> :
-                null}
-                {f.tipo === "movil" ?
-                <span className="border border-dashed border-azul-petroleo px-2 py-0.5 text-xs">
+                {cap ? (
+                  <span className="bg-azul-petroleo px-2 py-0.5 text-xs text-blanco">{cap}</span>
+                ) : null}
+                {f.tipo === "movil" ? (
+                  <span className="border border-dashed border-azul-petroleo px-2 py-0.5 text-xs">
                     Fiesta móvil
-                  </span> :
-                null}
-                {hayGaleria ?
-                <button
-                  type="button"
-                  className="text-xs font-medium uppercase tracking-wide text-celeste-cielo"
-                  onClick={() => onGaleria(f)}>
-                  
-                    Ver galería
-                  </button> :
-                f.enLibro ?
-                <span className="border border-azul-logo px-2 py-0.5 text-xs">En el libro</span> :
-
-                <span className="border border-naranja-libro px-2 py-0.5 text-xs text-naranja-libro">
+                  </span>
+                ) : null}
+                {hayFotos ? (
+                  <Link
+                    to={`/galeria?fiesta=${fiestaNumero(f) || f.id}`}
+                    className="text-xs font-medium uppercase tracking-wide text-celeste-cielo"
+                  >
+                    Ver en galería
+                  </Link>
+                ) : f.enLibro ? (
+                  <span className="border border-azul-logo px-2 py-0.5 text-xs">En el libro</span>
+                ) : (
+                  <span className="border border-naranja-libro px-2 py-0.5 text-xs text-naranja-libro">
                     Próximamente
                   </span>
-                }
+                )}
               </div>
             </div>
-          </li>);
-
+          </li>
+        );
       })}
-    </ul>);
-
+    </ul>
+  );
 }
 
-function Pin({
-  fiesta,
-  abierto,
-  onClick,
-  onGaleria
-
-
-
-
-
-}) {
+function Pin({ fiesta, abierto, onClick }) {
   const cls = [
-  "map-pin",
-  abierto ? "is-open" : "",
-  fiesta.tipo === "movil" ? "is-movil" : "",
-  fiesta.tipo === "pendiente" ? "is-pendiente" : ""].
-
-  filter(Boolean).
-  join(" ");
+    "map-pin",
+    abierto ? "is-open" : "",
+    fiesta.tipo === "movil" ? "is-movil" : "",
+    fiesta.tipo === "pendiente" ? "is-pendiente" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const portada = fotoPortada(fiesta);
-  const hayGaleria = fotosDe(fiesta).length > 0;
 
   return (
     <div className={`map-pin-wrap${abierto ? " is-open" : ""}`}>
@@ -177,12 +157,16 @@ function Pin({
           e.stopPropagation();
           onClick();
         }}
-        aria-label={`${fiestaNumero(fiesta)}. ${fiesta.nombre}`}>
-        
+        aria-label={`${fiestaNumero(fiesta)}. ${fiesta.nombre}`}
+      >
         {fiestaNumero(fiesta)}
       </button>
       <div className="map-pin-card">
-        {portada ? <img src={portada} alt="" /> : null}
+        {portada ? (
+          <div className="map-pin-card-img">
+            <ProtectedImage src={portada} alt="" className="h-full w-full" />
+          </div>
+        ) : null}
         <div className="map-pin-card-cuerpo">
           <strong>
             {fiestaNumero(fiesta)}. {fiesta.nombre}
@@ -192,22 +176,10 @@ function Pin({
             {fiesta.provincia && fiesta.lugar !== fiesta.provincia ? ` / ${fiesta.provincia}` : ""}
           </p>
           {fiesta.fecha ? <p>{fiesta.fecha}</p> : null}
-          {hayGaleria ?
-          <button
-            type="button"
-            className="ver-galeria"
-            onClick={(e) => {
-              e.stopPropagation();
-              onGaleria(fiesta);
-            }}>
-            
-              Ver galería
-            </button> :
-          null}
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 
@@ -223,28 +195,6 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
   const [mes, setMes] = useState("todos");
   const [q, setQ] = useState("");
   const [sheet, setSheet] = useState(false);
-  const [galeria, setGaleria] = useState(null);
-  const [galeriaFotos, setGaleriaFotos] = useState([]);
-
-  async function abrirGaleria(f) {
-    setGaleria(f);
-    setGaleriaFotos(fotosDe(f));
-    if (!f?.apiId) return;
-    try {
-      const imgs = await celebrationsService.publicImages(f.apiId);
-      const urls = celebrationImageUrls({
-        images: Array.isArray(imgs) ? imgs : [],
-      });
-      if (urls.length) setGaleriaFotos(urls);
-    } catch {
-      /* portada / fallback local */
-    }
-  }
-
-  function cerrarGaleria() {
-    setGaleria(null);
-    setGaleriaFotos([]);
-  }
 
   const REGIONES = useMemo(
     () => ["todas", ...[...new Set(FIESTAS.map((f) => f.region).filter(Boolean))]],
@@ -421,11 +371,10 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
                   offset={p.offset}>
                   
                     <Pin
-                    fiesta={p.fiesta}
-                    abierto={activaIds.includes(p.fiesta.id)}
-                    onClick={() => clickPin(p.fiesta)}
-                    onGaleria={abrirGaleria} />
-                  
+                      fiesta={p.fiesta}
+                      abierto={activaIds.includes(p.fiesta.id)}
+                      onClick={() => clickPin(p.fiesta)}
+                    />
                   </Marker>
                 )}
               </Map>
@@ -502,20 +451,20 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
               </ul>
             </div>
             <div className="hidden flex-1 overflow-y-auto border-t border-azul-logo/20 p-3 lg:block">
-              <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} onGaleria={abrirGaleria} />
+              <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} />
             </div>
           </div>
         </div>
       </div>
 
-      {sheet && detalle.length > 0 ?
-      <div className="fixed inset-0 z-50 lg:hidden">
+      {sheet && detalle.length > 0 ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
           <button
-          type="button"
-          className="absolute inset-0 bg-azul-petroleo/45"
-          aria-label="Cerrar detalle"
-          onClick={() => setSheet(false)} />
-        
+            type="button"
+            className="absolute inset-0 bg-azul-petroleo/45"
+            aria-label="Cerrar detalle"
+            onClick={() => setSheet(false)}
+          />
           <div className="absolute inset-x-0 bottom-0 max-h-[72vh] overflow-y-auto border-t-4 border-azul-petroleo bg-blanco px-4 py-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="font-display text-azul-petroleo">Detalle</p>
@@ -523,17 +472,10 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
                 Cerrar
               </Boton>
             </div>
-            <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} onGaleria={abrirGaleria} />
+            <Detalle fiestas={detalle} onPick={(id) => onActiva(id)} />
           </div>
-        </div> :
-      null}
-
-      <GaleriaModal
-        abierta={galeria != null}
-        titulo={galeria ? `${fiestaNumero(galeria)}. ${galeria.nombre}` : ""}
-        fotos={galeriaFotos}
-        onCerrar={cerrarGaleria} />
-      
-    </div>);
-
+        </div>
+      ) : null}
+    </div>
+  );
 }

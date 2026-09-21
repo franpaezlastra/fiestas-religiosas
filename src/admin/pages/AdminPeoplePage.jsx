@@ -7,6 +7,7 @@ import {
   fetchAdminPeople,
   updatePerson,
 } from "../../redux/slices/peopleSlice";
+import { fetchAdminBooks } from "../../redux/slices/booksSlice";
 import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { slugify } from "../../utils/slugify";
 import { useAdminPagination } from "../hooks/useAdminPagination";
@@ -18,6 +19,7 @@ import { mediaUrl, thumbUrl } from "../utils/mediaUrl";
 import {
   AdminAlert,
   AdminBadge,
+  AdminCheckbox,
   AdminField,
   AdminIconButton,
   AdminInput,
@@ -41,29 +43,54 @@ const emptyForm = {
   birthDate: "",
   deathDate: "",
   nationalityCode: "",
-  role: "SAINT",
+  canonizationStage: "",
+  isFeatured: false,
+  featuredDisplayOrder: "",
   status: "DRAFT",
   shortBio: "",
   biography: "",
+  bookId: "",
+  displayNumber: "",
+  chapterNumber: "",
+  pageReference: "",
 };
 
-const ROLE_LABELS = {
+const STAGE_LABELS = {
   SAINT: "Santo",
   BLESSED: "Beato",
-  FEATURED_PERSON: "Destacado",
+  VENERABLE: "Venerable",
+  SERVANT_OF_GOD: "Siervo de Dios",
+  PRE_CAUSE: "Pre-causa",
 };
 
 function nameOf(person) {
   return person.translations?.find((t) => t.locale === "es")?.displayName || person.id;
 }
 
-function roleOf(person) {
-  return person.roles?.[0]?.role || null;
+function stageOf(person) {
+  if (person.canonizationStage) return person.canonizationStage;
+  const role = person.roles?.[0]?.role;
+  if (role === "SAINT") return "SAINT";
+  if (role === "BLESSED") return "BLESSED";
+  if (role === "FEATURED_PERSON") return "SERVANT_OF_GOD";
+  return null;
 }
 
-function roleLabel(person) {
-  const role = roleOf(person);
-  return ROLE_LABELS[role] || role || "—";
+function stageLabel(person) {
+  const stage = stageOf(person);
+  if (STAGE_LABELS[stage]) return STAGE_LABELS[stage];
+  if (person.isFeatured) return "Destacado";
+  return "—";
+}
+
+function bookTitle(book) {
+  if (!book) return "Libro";
+  return (
+    book.translations?.find((t) => t.locale === "es")?.title ||
+    book.title ||
+    book.isbn ||
+    book.id
+  );
 }
 
 function dateInputValue(value) {
@@ -73,6 +100,7 @@ function dateInputValue(value) {
 
 function formFromDetail(detail) {
   const tr = detail.translations?.find((t) => t.locale === "es") || detail.translations?.[0];
+  const assoc = detail.bookAssociations?.[0] || detail.books?.[0];
   return {
     displayName: tr?.displayName || "",
     slug: tr?.slug || "",
@@ -82,10 +110,17 @@ function formFromDetail(detail) {
     birthDate: dateInputValue(detail.birthDate),
     deathDate: dateInputValue(detail.deathDate),
     nationalityCode: detail.nationalityCode || "",
-    role: roleOf(detail) || "SAINT",
+    canonizationStage: stageOf(detail) || "",
+    isFeatured: Boolean(detail.isFeatured),
+    featuredDisplayOrder:
+      detail.featuredDisplayOrder != null ? String(detail.featuredDisplayOrder) : "",
     status: detail.status || "DRAFT",
     shortBio: tr?.shortBio || "",
     biography: tr?.biography || "",
+    bookId: assoc?.bookId || assoc?.book?.id || "",
+    displayNumber: assoc?.displayNumber != null ? String(assoc.displayNumber) : "",
+    chapterNumber: assoc?.chapterNumber != null ? String(assoc.chapterNumber) : "",
+    pageReference: assoc?.pageReference || "",
   };
 }
 
@@ -100,11 +135,6 @@ function buildTranslations(form) {
       birthPlace: form.birthPlace.trim() || null,
     },
   ];
-}
-
-function buildRoles(form, existingRoles = []) {
-  const displayOrder = existingRoles?.[0]?.displayOrder ?? 0;
-  return [{ role: form.role, displayOrder }];
 }
 
 function serializeImages(images, displayName = "") {
@@ -144,13 +174,14 @@ export function AdminPeoplePage() {
   const confirm = useAdminConfirm();
   const items = useSelector((state) => state.people.adminItems);
   const media = useSelector((state) => state.media.items);
+  const books = useSelector((state) => state.books.adminItems);
 
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [personImages, setPersonImages] = useState([]);
-  const [existingRoles, setExistingRoles] = useState([]);
   const [selectedMediaId, setSelectedMediaId] = useState("");
   const [imagesDirty, setImagesDirty] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -162,6 +193,7 @@ export function AdminPeoplePage() {
   useEffect(() => {
     dispatch(fetchAdminPeople());
     dispatch(fetchAdminMedia());
+    dispatch(fetchAdminBooks());
   }, [dispatch]);
 
   const statusFiltered = useMemo(() => {
@@ -172,7 +204,7 @@ export function AdminPeoplePage() {
   const filterFn = useCallback((list, q) => {
     if (!q) return list;
     return list.filter((item) =>
-      `${nameOf(item)} ${roleLabel(item)} ${item.status}`.toLowerCase().includes(q),
+      `${nameOf(item)} ${stageLabel(item)} ${item.status}`.toLowerCase().includes(q),
     );
   }, []);
 
@@ -185,6 +217,7 @@ export function AdminPeoplePage() {
   }, [items]);
 
   function setField(key, value) {
+    setFormDirty(true);
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "displayName" && !editingId) next.slug = slugify(value);
@@ -202,9 +235,9 @@ export function AdminPeoplePage() {
     setEditingId(null);
     setForm(emptyForm);
     setPersonImages([]);
-    setExistingRoles([]);
     setSelectedMediaId("");
     setImagesDirty(false);
+    setFormDirty(false);
     setMessage("");
     setError("");
     setLoadingDetail(false);
@@ -219,16 +252,15 @@ export function AdminPeoplePage() {
     setEditingId(item.id);
     setSelectedMediaId("");
     setImagesDirty(false);
+    setFormDirty(false);
     try {
       const detail = await peopleService.adminGet(item.id);
       setForm(formFromDetail(detail));
       setPersonImages(detail.images || []);
-      setExistingRoles(detail.roles || []);
     } catch (err) {
       setError(err.message || "No se pudo cargar la persona");
       setForm(formFromDetail(item));
       setPersonImages(item.images || []);
-      setExistingRoles(item.roles || []);
     } finally {
       setLoadingDetail(false);
     }
@@ -239,9 +271,9 @@ export function AdminPeoplePage() {
     setEditingId(null);
     setForm(emptyForm);
     setPersonImages([]);
-    setExistingRoles([]);
     setSelectedMediaId("");
     setImagesDirty(false);
+    setFormDirty(false);
     setError("");
     setMessage("");
     setLoadingDetail(false);
@@ -258,8 +290,24 @@ export function AdminPeoplePage() {
       nationalityCode: nationality.length === 2 ? nationality : null,
       status: form.status,
       translations: buildTranslations(form),
-      roles: buildRoles(form, existingRoles),
+      isFeatured: Boolean(form.isFeatured),
+      featuredDisplayOrder:
+        form.featuredDisplayOrder.trim() !== ""
+          ? Number(form.featuredDisplayOrder)
+          : null,
+      canonizationStage: form.canonizationStage || null,
     };
+  }
+
+  function buildBookAssociations() {
+    if (!form.bookId || !form.displayNumber.trim()) return [];
+    const assoc = {
+      bookId: form.bookId,
+      displayNumber: Number(form.displayNumber),
+    };
+    if (form.chapterNumber.trim()) assoc.chapterNumber = Number(form.chapterNumber);
+    if (form.pageReference.trim()) assoc.pageReference = form.pageReference.trim();
+    return [assoc];
   }
 
   async function onAddImage() {
@@ -307,7 +355,6 @@ export function AdminPeoplePage() {
       };
       const updated = await peopleService.update(editingId, body);
       setPersonImages(updated.images || nextImages);
-      setExistingRoles(updated.roles || existingRoles);
       setSelectedMediaId("");
       setImagesDirty(false);
       setMessage("Imagen agregada.");
@@ -344,7 +391,6 @@ export function AdminPeoplePage() {
       };
       const updated = await peopleService.update(editingId, body);
       setPersonImages(updated.images || normalized);
-      setExistingRoles(updated.roles || existingRoles);
       setImagesDirty(false);
       setMessage("Imagen quitada.");
       toast.push({ type: "success", message: "Imagen quitada." });
@@ -365,13 +411,11 @@ export function AdminPeoplePage() {
     const body = buildScalarBody();
 
     if (!editingId) {
-      // Create: [] o con las imágenes seleccionadas.
       body.images = serializeImages(personImages, form.displayName);
+      body.bookAssociations = buildBookAssociations();
     } else if (imagesDirty) {
-      // Update: solo si se tocaron imágenes; nunca images:[] por accidente.
       body.images = serializeImages(personImages, form.displayName);
     }
-    // Si no imagesDirty en update → omitir clave images por completo.
 
     const action = editingId
       ? await dispatch(updatePerson({ id: editingId, body }))
@@ -388,6 +432,7 @@ export function AdminPeoplePage() {
     setMessage(successMsg);
     toast.push({ type: "success", message: successMsg });
     setImagesDirty(false);
+    setFormDirty(false);
     dispatch(fetchAdminPeople());
     dispatch(fetchAdminMedia());
     setTimeout(() => closeModal(), 450);
@@ -456,7 +501,7 @@ export function AdminPeoplePage() {
       render: (row) => (
         <div>
           <p className="font-medium text-[var(--admin-text)]">{nameOf(row)}</p>
-          <p className="text-xs text-[var(--admin-text-muted)]">{roleLabel(row)}</p>
+          <p className="text-xs text-[var(--admin-text-muted)]">{stageLabel(row)}</p>
         </div>
       ),
     },
@@ -516,7 +561,7 @@ export function AdminPeoplePage() {
           <AdminSearch
             value={pager.query}
             onChange={pager.setQuery}
-            placeholder="Buscar persona, rol o estado…"
+            placeholder="Buscar persona, etapa o estado…"
           />
         }
       >
@@ -558,13 +603,16 @@ export function AdminPeoplePage() {
         open={modalOpen}
         onClose={closeModal}
         title={editingId ? "Editar persona" : "Nueva persona"}
+        subtitle="Swagger PersonInput: canonizationStage, isFeatured, images, bookAssociations."
         size="lg"
+        dirty={formDirty || imagesDirty}
         footer={
           <AdminModalActions
             formId="person-form"
             onCancel={closeModal}
             saving={saving || loadingDetail}
             submitLabel="Guardar"
+            dirty={formDirty || imagesDirty}
           />
         }
       >
@@ -631,15 +679,22 @@ export function AdminPeoplePage() {
               </AdminField>
             </AdminSection>
 
-            <AdminSection title="Rol y estado">
-              <AdminField label="Rol" required>
+            <AdminSection title="Canonización y visibilidad">
+              <AdminField
+                label="Etapa de canonización"
+                hint="canonizationStage (reemplaza roles SAINT/BLESSED)."
+                span={2}
+              >
                 <AdminSelect
-                  value={form.role}
-                  onChange={(e) => setField("role", e.target.value)}
+                  value={form.canonizationStage}
+                  onChange={(e) => setField("canonizationStage", e.target.value)}
                 >
+                  <option value="">Sin etapa</option>
                   <option value="SAINT">Santo</option>
                   <option value="BLESSED">Beato</option>
-                  <option value="FEATURED_PERSON">Destacado</option>
+                  <option value="VENERABLE">Venerable</option>
+                  <option value="SERVANT_OF_GOD">Siervo de Dios</option>
+                  <option value="PRE_CAUSE">Pre-causa</option>
                 </AdminSelect>
               </AdminField>
               <AdminField label="Estado" required>
@@ -652,7 +707,69 @@ export function AdminPeoplePage() {
                   <option value="ARCHIVED">Archivado</option>
                 </AdminSelect>
               </AdminField>
+              <AdminField label="Orden destacado" hint="featuredDisplayOrder">
+                <AdminInput
+                  type="number"
+                  min={0}
+                  value={form.featuredDisplayOrder}
+                  onChange={(e) => setField("featuredDisplayOrder", e.target.value)}
+                  placeholder="opcional"
+                />
+              </AdminField>
+              <div className="sm:col-span-2">
+                <AdminCheckbox
+                  label="Destacada (isFeatured)"
+                  checked={form.isFeatured}
+                  onChange={(e) => setField("isFeatured", e.target.checked)}
+                />
+              </div>
             </AdminSection>
+
+            {!editingId ? (
+              <AdminSection
+                title="Asociación a libro"
+                description="Opcional al crear (bookAssociations). Después se gestiona desde Libros."
+              >
+                <AdminField label="Libro" span={2}>
+                  <AdminSelect
+                    value={form.bookId}
+                    onChange={(e) => setField("bookId", e.target.value)}
+                  >
+                    <option value="">Sin libro</option>
+                    {books.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {bookTitle(b)}
+                      </option>
+                    ))}
+                  </AdminSelect>
+                </AdminField>
+                <AdminField label="Nº visible" hint="displayNumber (mapa de santos)" required={Boolean(form.bookId)}>
+                  <AdminInput
+                    type="number"
+                    min={1}
+                    required={Boolean(form.bookId)}
+                    value={form.displayNumber}
+                    onChange={(e) => setField("displayNumber", e.target.value)}
+                    placeholder="ej. 12"
+                  />
+                </AdminField>
+                <AdminField label="Capítulo">
+                  <AdminInput
+                    type="number"
+                    min={1}
+                    value={form.chapterNumber}
+                    onChange={(e) => setField("chapterNumber", e.target.value)}
+                  />
+                </AdminField>
+                <AdminField label="Páginas" span={2}>
+                  <AdminInput
+                    value={form.pageReference}
+                    onChange={(e) => setField("pageReference", e.target.value)}
+                    placeholder='ej. "40-41"'
+                  />
+                </AdminField>
+              </AdminSection>
+            ) : null}
 
             <AdminSection title="Biografía">
               <AdminField label="Bio corta" span={2}>

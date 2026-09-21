@@ -54,6 +54,8 @@ export function Header() {
           <NavLink key={l.to} to={l.to} className={linkClass} onClick={cerrar}>
               {l.to === "/mapa" ?
             "Mapa" :
+            l.to === "/galeria" ?
+            "Galería" :
             l.to === "/francisco" ?
             "Francisco" :
             l.to === "/santos" ?
