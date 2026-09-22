@@ -172,6 +172,28 @@
   color: #9ca3af;
 }
 
+/* Buscador: la lupa va encima del input y el texto no la tapa */
+.admin-search {
+  position: relative;
+}
+
+.admin-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--admin-text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.admin-search-input.admin-input {
+  margin-top: 0;
+  padding-left: 2.4rem;
+}
+
 .admin-table-wrap {
   overflow: hidden;
   border-radius: var(--radius-lg);

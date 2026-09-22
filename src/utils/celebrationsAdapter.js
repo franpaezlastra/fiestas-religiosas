@@ -38,20 +38,44 @@ function scheduleTranslation(schedule) {
   );
 }
 
-function mediaUrl(image) {
+function mediaUrl(image, { maxWidth } = {}) {
   const media = image?.media;
   if (!media) return null;
-  if (media.url) return media.url;
-  if (media.storageKey) {
-    const cloud =
-      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
-    return `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
+
+  let url = null;
+  if (media.url) url = media.url;
+  else if (media.storageKey) {
+    const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
+    url = `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
   }
-  return null;
+  if (!url) return null;
+  return optimizeCloudinaryUrl(url, maxWidth);
+}
+
+/** Seeds del API (`_placeholder_seed.webp`, ~1 KB azul) — no son fotos reales. */
+export function isPlaceholderImage(image) {
+  const media = image?.media;
+  if (!media) return true;
+  const name = String(media.originalFilename || "");
+  const key = String(media.storageKey || "");
+  if (/placeholder/i.test(name) || /placeholder/i.test(key)) return true;
+  // archivos minúsculos del seed
+  if (typeof media.sizeBytes === "number" && media.sizeBytes > 0 && media.sizeBytes < 5000) {
+    return true;
+  }
+  return false;
+}
+
+/** Reduce peso de previews/álbum; el original sigue disponible sin maxWidth. */
+export function optimizeCloudinaryUrl(url, maxWidth) {
+  if (!url || !maxWidth) return url;
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
+  if (/\/upload\/(?:[^/]+,)*w_/.test(url)) return url;
+  return url.replace("/upload/", `/upload/c_limit,w_${maxWidth},q_auto,f_auto/`);
 }
 
 /** Lista pública puede traer `primaryImage` o `images[]` según deploy. */
-export function celebrationImageUrls(item) {
+export function celebrationImageUrls(item, { maxWidth } = {}) {
   const raw =
     Array.isArray(item?.images) && item.images.length > 0
       ? item.images
@@ -59,12 +83,19 @@ export function celebrationImageUrls(item) {
         ? [item.primaryImage]
         : [];
   return [...raw]
+    .filter((img) => !isPlaceholderImage(img))
     .sort((a, b) => {
       if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
       return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
     })
-    .map(mediaUrl)
+    .map((img) => mediaUrl(img, { maxWidth }))
     .filter(Boolean);
+}
+
+/** Filtra placeholders en un array crudo de CelebrationImage. */
+export function filterRealImages(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((img) => !isPlaceholderImage(img));
 }
 
 function tipoFromSchedule(schedule, local) {
@@ -77,12 +108,13 @@ function tipoFromSchedule(schedule, local) {
 }
 
 function mesFromSchedule(schedule, local) {
-  if (local?.mes != null) return local.mes;
+  // Prioridad: schedule del API (startMonth / startDate), después mock local
   if (schedule?.startMonth != null) return Number(schedule.startMonth);
   if (schedule?.startDate) {
     const d = new Date(schedule.startDate);
     if (!Number.isNaN(d.getTime())) return d.getUTCMonth() + 1;
   }
+  if (local?.mes != null) return local.mes;
   return null;
 }
 
@@ -108,6 +140,7 @@ export function celebrationToFiesta(item) {
   const fotos = celebrationImageUrls(item);
 
   const numero =
+    (typeof item.bookNumber === "number" ? item.bookNumber : null) ??
     legacyId ??
     (typeof item.displayOrder === "number" ? item.displayOrder : null) ??
     local?.id ??
@@ -120,16 +153,18 @@ export function celebrationToFiesta(item) {
     nombre: tr?.name || local?.nombre || "Sin nombre",
     lugar: item.locality || item.placeName || local?.lugar || "",
     provincia: item.province?.name || local?.provincia || "",
-    region: local?.region || null,
+    provinceId: item.province?.id || null,
+    // region / mapKind / inBook: del API si existen; si no, mock local
+    region: item.region || local?.region || null,
     fecha: scheduleTr?.dateDescription || local?.fecha || "",
     fechaISO_referencia: fechaIsoFromSchedule(schedule, local),
     mes: mesFromSchedule(schedule, local),
-    tipo: tipoFromSchedule(schedule, local),
-    capitulo: local?.capitulo ?? null,
-    paginas: local?.paginas ?? null,
+    tipo: item.mapKind || tipoFromSchedule(schedule, local),
+    capitulo: item.bookChapter ?? local?.capitulo ?? null,
+    paginas: item.bookPages ?? local?.paginas ?? null,
     lat: item.latitude != null ? Number(item.latitude) : local?.lat ?? null,
     lng: item.longitude != null ? Number(item.longitude) : local?.lng ?? null,
-    enLibro: local?.enLibro ?? true,
+    enLibro: item.inBook ?? local?.enLibro ?? true,
     showOnMap: item.showOnMap !== false,
     fotos,
     source: "api",

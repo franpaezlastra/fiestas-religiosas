@@ -6,6 +6,23 @@ import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { selectFranciscoTimelines } from "../../utils/timelinesAdapter";
 
+const FRASES_FRANCISCO = [
+  "«Recen por mí».",
+  "«Por favor, gracias, perdón».",
+  "«Hagan lío».",
+  "«Atrevámonos un poco más a primerear».",
+  "«Quien soy yo para juzgar».",
+  "«Cuidar la casa Común».",
+  "«El tiempo es superior al espacio».",
+  "«No balconear la vida».",
+  "«El mundo necesita más puentes y menos muros».",
+  "«No se dejen robar la esperanza y vayan adelante. Que no se las roben. Al contrario: siembren esperanza».",
+  "«Tierra, techo y trabajo para todos».",
+  "«El todo es más que las partes».",
+  "«Todos, Todos, Todos».",
+  "«Prefiero una Iglesia accidentada, herida y manchada antes que una Iglesia enferma, cerrada».",
+];
+
 function irA(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -100,6 +117,30 @@ export function SeccionBergoglio() {
           titulo="Principales acciones del papa Francisco"
           kicker="Main actions of Pope Francis"
         />
+
+        <figure className="border-b border-azul-logo/10 bg-blanco">
+          <div className="mx-auto max-w-5xl px-4 pt-12 md:pt-16">
+            <h3 className="titulo-seccion text-[1.75rem] md:text-[2rem]">
+              Un papa argentino para el mundo
+            </h3>
+            <p className="mt-3 max-w-2xl font-light leading-relaxed">
+              Portadas. Diarios y revistas argentinas reflejan la elección del papa Francisco.
+            </p>
+          </div>
+          <div className="foto-libro mt-8 h-[min(52vh,32rem)]">
+            <img
+              src="/images/tapas-diarios-eleccion.jpg"
+              alt="Portadas de diarios y revistas argentinas el día de la elección del papa Francisco"
+            />
+          </div>
+          <figcaption className="mx-auto max-w-5xl px-4 py-4 text-sm">
+            Portadas. Diarios y revistas argentinas reflejan la elección del papa Francisco.
+            <span className="caption-en block">
+              Front pages. Argentine newspapers and magazines cover the election of Pope Francis.
+            </span>
+          </figcaption>
+        </figure>
+
         <div className="bg-papel">
           <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
             <p className="font-display text-sm text-azul-petroleo">Realizó 47 viajes a 66 países</p>
@@ -112,9 +153,42 @@ export function SeccionBergoglio() {
               />
             </div>
             <p className="mt-8 text-center font-display text-sm text-azul-logo">21 de abril de 2025</p>
+
+            <blockquote className="mx-auto mt-16 max-w-2xl text-center md:mt-20">
+              <p className="font-display text-[1.65rem] leading-snug text-azul-petroleo md:text-[2.15rem] md:leading-tight">
+                «Como Jesús, Francisco nos amó hasta el fin.»
+              </p>
+              <footer className="mt-8 text-sm font-light text-texto md:text-base">
+                — Mons. Marcelo Colombo, arzobispo de Mendoza y presidente de la Conferencia
+                Episcopal Argentina
+              </footer>
+            </blockquote>
           </div>
         </div>
       </div>
+
+      <section className="border-t border-azul-logo/10 bg-blanco px-4 py-16 md:py-24">
+        <div className="mx-auto max-w-6xl">
+          <h3 className="titulo-seccion text-center text-[1.75rem] md:text-[2rem]">
+            Palabras del papa Francisco
+          </h3>
+          <p className="mx-auto mt-3 max-w-xl text-center text-sm font-light">
+            Frases que marcaron su pontificado.
+          </p>
+          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {FRASES_FRANCISCO.map((frase) => (
+              <li
+                key={frase}
+                className="reveal-scroll flex items-center border border-azul-logo/15 bg-papel px-5 py-6 md:px-6 md:py-8"
+              >
+                <p className="font-display text-xl leading-snug text-azul-petroleo md:text-2xl">
+                  {frase}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
       <div className="mx-auto max-w-6xl px-4 py-12 md:py-20">
         <Pendiente titulo="Pendiente — texto adicional">
@@ -148,14 +222,15 @@ export function SeccionTresArgentinos() {
             <span className="caption-en block">The most famous Argentines of all time.</span>
           </figcaption>
         </figure>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-3">
+
+        <ul className="mt-10 space-y-6">
           {ARGENTINOS_FAMOSOS.map((a) => (
             <li
-              key={a.id}
-              className="reveal-scroll border border-azul-logo/20 bg-papel px-4 py-6 text-center"
+              key={a.nombre}
+              className="reveal-scroll border-b border-azul-logo/15 pb-6 last:border-0"
             >
-              <p className="font-display text-lg text-azul-petroleo">{a.nombre}</p>
-              <p className="mt-2 text-sm font-light">{a.rol}</p>
+              <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
+              <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
             </li>
           ))}
         </ul>

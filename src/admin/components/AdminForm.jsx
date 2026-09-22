@@ -227,16 +227,17 @@ export function AdminTable({ columns, rows, empty, emptyAction }) {
 
 export function AdminSearch({ value, onChange, placeholder = "Buscar…" }) {
   return (
-    <div className="relative">
+    <div className="admin-search">
+      <span className="admin-search-icon" aria-hidden>
+        ⌕
+      </span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`${inputClass} !mt-0 pl-9`}
+        className="admin-input admin-search-input"
+        aria-label={placeholder}
       />
-      <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[var(--admin-text-muted)]">
-        ⌕
-      </span>
     </div>
   );
 }

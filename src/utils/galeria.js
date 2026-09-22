@@ -1,4 +1,5 @@
 import galeria from "../data/galeria.json" with { type: "json" };
+import { optimizeCloudinaryUrl } from "./celebrationsAdapter";
 
 const MAPA = galeria;
 
@@ -26,6 +27,21 @@ export function fotosDe(fiestaOrId) {
   return fotosLocalesDe(fiestaOrId);
 }
 
+/** Solo media del API (images[] / primaryImage). Sin fallback local. */
+export function fotosApiDe(fiesta) {
+  if (fiesta && Array.isArray(fiesta.fotos) && fiesta.fotos.length > 0) {
+    return fiesta.fotos;
+  }
+  return [];
+}
+
+export function tieneFotosApi(fiesta) {
+  return Boolean(fotosApiDe(fiesta)[0]);
+}
+
+/** Portada del índice (optimizada para preview). */
 export function fotoPortada(fiestaOrId) {
-  return fotosDe(fiestaOrId)[0] ?? null;
+  const url = fotosApiDe(fiestaOrId)[0] ?? null;
+  if (!url) return null;
+  return optimizeCloudinaryUrl(url, 900);
 }

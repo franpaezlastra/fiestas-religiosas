@@ -6,6 +6,7 @@ import {
   fetchAdminTimelines,
   updateTimeline,
 } from "../../redux/slices/timelinesSlice";
+import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { timelinesService } from "../../services";
 import { slugify } from "../../utils/slugify";
 import { useAdminPagination } from "../hooks/useAdminPagination";
@@ -14,6 +15,7 @@ import { useAdminConfirm } from "../components/AdminConfirm";
 import { useAdminToast } from "../components/AdminToast";
 import { AdminModal, AdminModalActions } from "../components/AdminModal";
 import { AdminSortableList, nextDisplayOrder } from "../components/AdminSortableList";
+import { mediaUrl } from "../utils/mediaUrl";
 import {
   AdminAlert,
   AdminBadge,
@@ -50,6 +52,8 @@ function emptyEvent(order = 0) {
     title: "",
     dateDescription: "",
     description: "",
+    images: [],
+    pickMediaId: "",
     open: true,
   };
 }
@@ -81,50 +85,54 @@ function mapApiEvent(ev, index) {
     dateDescription: tr?.dateDescription || "",
     description: tr?.description || "",
     images: Array.isArray(ev.images) ? ev.images : [],
+    pickMediaId: "",
     open: false,
   };
 }
 
+function serializeEventImages(images) {
+  return (images || [])
+    .map((img, i) => {
+      const mediaId = img.mediaId || img.media?.id;
+      if (!mediaId) return null;
+      return {
+        mediaId,
+        isPrimary: Boolean(img.isPrimary) || i === 0,
+        displayOrder: img.displayOrder ?? i,
+        translations: img.translations?.length
+          ? img.translations.map((t) => ({
+              locale: t.locale || "es",
+              caption: t.caption ?? null,
+              altText: t.altText ?? null,
+            }))
+          : [{ locale: "es", caption: null, altText: null }],
+      };
+    })
+    .filter(Boolean);
+}
+
 function eventsToPayload(events) {
-  return events.map((ev, index) => {
-    const row = {
-      startDate: ev.startDate || null,
-      endDate: ev.endDate || null,
-      displayOrder: Number(ev.displayOrder) || index,
-      status: ev.status || "PUBLISHED",
-      translations: [
-        {
-          locale: "es",
-          title: ev.title.trim(),
-          description: ev.description.trim() || null,
-          dateDescription: ev.dateDescription.trim() || String(ev.startDate || index + 1),
-        },
-      ],
-    };
-    // Preservar imágenes existentes; nunca mandar [] al pedo (borra la galería del hito).
-    if (Array.isArray(ev.images) && ev.images.length > 0) {
-      row.images = ev.images
-        .map((img, i) => {
-          const mediaId = img.mediaId || img.media?.id;
-          if (!mediaId) return null;
-          return {
-            mediaId,
-            isPrimary: Boolean(img.isPrimary) || i === 0,
-            displayOrder: img.displayOrder ?? i,
-            translations: img.translations?.length
-              ? img.translations
-              : [{ locale: "es", caption: null, altText: null }],
-          };
-        })
-        .filter(Boolean);
-    }
-    return row;
-  });
+  return events.map((ev, index) => ({
+    startDate: ev.startDate || null,
+    endDate: ev.endDate || null,
+    displayOrder: Number(ev.displayOrder) || index,
+    status: ev.status || "PUBLISHED",
+    translations: [
+      {
+        locale: "es",
+        title: ev.title.trim(),
+        description: ev.description.trim() || null,
+        dateDescription: ev.dateDescription.trim() || String(ev.startDate || index + 1),
+      },
+    ],
+    images: serializeEventImages(ev.images),
+  }));
 }
 
 export function AdminTimelinesPage() {
   const dispatch = useDispatch();
   const items = useSelector((state) => state.timelines.adminItems);
+  const media = useSelector((state) => state.media.items);
   const toast = useAdminToast();
   const confirm = useAdminConfirm();
   const [form, setForm] = useState(emptyForm);
@@ -141,6 +149,7 @@ export function AdminTimelinesPage() {
 
   useEffect(() => {
     dispatch(fetchAdminTimelines());
+    dispatch(fetchAdminMedia());
   }, [dispatch]);
 
   const statusFiltered = useMemo(() => {
@@ -293,6 +302,70 @@ export function AdminTimelinesPage() {
     );
   }
 
+  function addImageToEvent(eventKey) {
+    setEvents((list) =>
+      list.map((ev) => {
+        if (ev._key !== eventKey || !ev.pickMediaId) return ev;
+        const mediaId = ev.pickMediaId;
+        const already = (ev.images || []).some(
+          (img) => (img.mediaId || img.media?.id) === mediaId,
+        );
+        if (already) return { ...ev, pickMediaId: "" };
+        const mediaItem = media.find((m) => m.id === mediaId);
+        return {
+          ...ev,
+          pickMediaId: "",
+          images: [
+            ...(ev.images || []),
+            {
+              mediaId,
+              isPrimary: (ev.images || []).length === 0,
+              displayOrder: (ev.images || []).length,
+              media: mediaItem,
+              translations: [
+                { locale: "es", caption: null, altText: ev.title || null },
+              ],
+            },
+          ],
+        };
+      }),
+    );
+    setEventsDirty(true);
+  }
+
+  function removeImageFromEvent(eventKey, mediaId) {
+    setEventsDirty(true);
+    setEvents((list) =>
+      list.map((ev) => {
+        if (ev._key !== eventKey) return ev;
+        const next = (ev.images || [])
+          .filter((img) => (img.mediaId || img.media?.id) !== mediaId)
+          .map((img, index) => ({
+            ...img,
+            isPrimary: index === 0,
+            displayOrder: index,
+          }));
+        return { ...ev, images: next };
+      }),
+    );
+  }
+
+  function setPrimaryEventImage(eventKey, mediaId) {
+    setEventsDirty(true);
+    setEvents((list) =>
+      list.map((ev) => {
+        if (ev._key !== eventKey) return ev;
+        return {
+          ...ev,
+          images: (ev.images || []).map((img) => ({
+            ...img,
+            isPrimary: (img.mediaId || img.media?.id) === mediaId,
+          })),
+        };
+      }),
+    );
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -390,7 +463,7 @@ export function AdminTimelinesPage() {
       {confirm.dialog}
       <AdminPageHeader
         title="Cronologías"
-        subtitle="Líneas de tiempo con hitos. No se envían events vacíos al editar solo la ficha."
+        subtitle="Líneas de tiempo con hitos e imágenes por evento."
         actions={
           <div className="flex flex-wrap gap-2">
             <AdminButton
@@ -663,6 +736,116 @@ export function AdminTimelinesPage() {
                               }
                             />
                           </AdminField>
+
+                          <div className="sm:col-span-2 space-y-3 border-t border-[var(--admin-border)] pt-3">
+                            <p className="text-sm font-medium text-[var(--admin-text)]">
+                              Imágenes del hito
+                            </p>
+                            <p className="text-xs text-[var(--admin-text-muted)]">
+                              Desde la biblioteca de Media. Se envían en events[].images al
+                              crear o al guardar hitos.
+                            </p>
+                            {(ev.images || []).length > 0 ? (
+                              <ul className="space-y-2">
+                                {(ev.images || []).map((img) => {
+                                  const mid = img.mediaId || img.media?.id;
+                                  const src = mediaUrl(img);
+                                  return (
+                                    <li
+                                      key={mid}
+                                      className="flex flex-wrap items-center gap-3 border border-[var(--admin-border)] px-2 py-2"
+                                    >
+                                      {src ? (
+                                        <img
+                                          src={src}
+                                          alt=""
+                                          className="h-12 w-12 object-cover"
+                                          style={{ borderRadius: "var(--radius-sm)" }}
+                                          width={48}
+                                          height={48}
+                                        />
+                                      ) : (
+                                        <div className="flex h-12 w-12 items-center justify-center bg-[var(--admin-bg)] text-xs text-[var(--admin-text-muted)]">
+                                          —
+                                        </div>
+                                      )}
+                                      <div className="min-w-0 flex-1 text-xs text-[var(--admin-text-muted)]">
+                                        {img.isPrimary ? (
+                                          <span className="mr-2 border border-[var(--admin-border)] px-1.5 py-0.5 uppercase tracking-wide text-[10px] text-[var(--admin-text)]">
+                                            Primaria
+                                          </span>
+                                        ) : null}
+                                        {media.find((m) => m.id === mid)?.originalFilename ||
+                                          mid}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        {!img.isPrimary ? (
+                                          <AdminButton
+                                            type="button"
+                                            variante="secondary"
+                                            tamano="sm"
+                                            onClick={() =>
+                                              setPrimaryEventImage(ev._key, mid)
+                                            }
+                                          >
+                                            Primaria
+                                          </AdminButton>
+                                        ) : null}
+                                        <AdminButton
+                                          type="button"
+                                          variante="danger"
+                                          tamano="sm"
+                                          onClick={() =>
+                                            removeImageFromEvent(ev._key, mid)
+                                          }
+                                        >
+                                          Quitar
+                                        </AdminButton>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-[var(--admin-text-muted)]">
+                                Sin imágenes en este hito.
+                              </p>
+                            )}
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                              <AdminField label="Agregar de la biblioteca" className="min-w-0 flex-1">
+                                <AdminSelect
+                                  value={ev.pickMediaId || ""}
+                                  onChange={(e) =>
+                                    updateEvent(ev._key, { pickMediaId: e.target.value })
+                                  }
+                                >
+                                  <option value="">Elegir imagen…</option>
+                                  {media
+                                    .filter(
+                                      (m) =>
+                                        !(ev.images || []).some(
+                                          (img) =>
+                                            (img.mediaId || img.media?.id) === m.id,
+                                        ),
+                                    )
+                                    .map((m) => (
+                                      <option key={m.id} value={m.id}>
+                                        {m.originalFilename || m.id}
+                                      </option>
+                                    ))}
+                                </AdminSelect>
+                              </AdminField>
+                              <AdminButton
+                                type="button"
+                                tamano="sm"
+                                disabled={!ev.pickMediaId}
+                                onClick={() => addImageToEvent(ev._key)}
+                              >
+                                Agregar imagen
+                              </AdminButton>
+                            </div>
+                          </div>
+
                           <div className="sm:col-span-2">
                             <AdminButton
                               variante="danger"
