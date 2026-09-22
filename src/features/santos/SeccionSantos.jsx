@@ -1,12 +1,22 @@
-import { useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { fetchPublicPeople } from "../../redux/slices/peopleSlice";
 import { selectSantosForUi } from "../../utils/peopleAdapter";
 
 export function SeccionSantos() {
+  const dispatch = useDispatch();
   const publicItems = useSelector((s) => s.people.publicItems);
-  const santos = useMemo(() => selectSantosForUi(publicItems), [publicItems]);
+  const fromHoliness = useSelector((s) => s.people.fromHoliness);
+  const santos = useMemo(
+    () => selectSantosForUi(publicItems, { fromHoliness }),
+    [publicItems, fromHoliness],
+  );
+
+  useEffect(() => {
+    dispatch(fetchPublicPeople());
+  }, [dispatch]);
 
   return (
     <section>

@@ -601,7 +601,7 @@ export function AdminBooksPage() {
   ];
 
   return (
-    <div>
+      <div>
       {confirm.dialog}
 
       <AdminPageHeader
@@ -693,11 +693,11 @@ export function AdminBooksPage() {
           <AdminSection title="Ficha editorial">
             <AdminField label="ISBN" required>
               <AdminInput
-                required
+            required
                 minLength={10}
                 maxLength={20}
-                value={form.isbn}
-                onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
+            value={form.isbn}
+            onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
               />
             </AdminField>
             <AdminField label="Editorial">
@@ -708,22 +708,22 @@ export function AdminBooksPage() {
             </AdminField>
             <AdminField label="Título" required span={2}>
               <AdminInput
-                required
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            required
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               />
             </AdminField>
             <AdminField label="Subtítulo" span={2}>
               <AdminInput
-                value={form.subtitle}
-                onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
+            value={form.subtitle}
+            onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
               />
             </AdminField>
             <AdminField label="Descripción" span={2}>
               <AdminTextarea
                 rows={4}
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </AdminField>
             <AdminField label="Páginas">
@@ -754,11 +754,11 @@ export function AdminBooksPage() {
               hint="Publicar exige tapa (COVER) y contratapa (BACK_COVER)."
             >
               <AdminSelect
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-              >
-                <option value="DRAFT">Borrador</option>
-                <option value="PUBLISHED">Publicado</option>
+            value={form.status}
+            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+          >
+            <option value="DRAFT">Borrador</option>
+            <option value="PUBLISHED">Publicado</option>
                 <option value="ARCHIVED">Archivado</option>
               </AdminSelect>
             </AdminField>
@@ -1213,7 +1213,7 @@ export function AdminBooksPage() {
               </div>
             )}
           </section>
-        </form>
+      </form>
         )}
       </AdminModal>
     </div>

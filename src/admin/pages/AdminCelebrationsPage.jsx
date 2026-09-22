@@ -11,6 +11,7 @@ import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { fetchAdminBooks } from "../../redux/slices/booksSlice";
 import { fetchProvinces } from "../../redux/slices/provincesSlice";
 import { slugify } from "../../utils/slugify";
+import { cleanLegacyTag } from "../../utils/celebrationsAdapter";
 import { useAdminPagination } from "../hooks/useAdminPagination";
 import { AdminButton } from "../components/AdminButton";
 import { useAdminConfirm } from "../components/AdminConfirm";
@@ -134,7 +135,7 @@ function formFromDetail(detail) {
     name: tr?.name || "",
     slug: tr?.slug || "",
     description: tr?.description || "",
-    shortDescription: tr?.shortDescription || "",
+    shortDescription: cleanLegacyTag(tr?.shortDescription),
     locality: detail.locality || "",
     placeName: detail.placeName || "",
     provinceId: detail.provinceId || "",
@@ -491,7 +492,7 @@ export function AdminCelebrationsPage() {
           name: form.name.trim(),
           slug: (form.slug || slugify(form.name)).trim(),
           description: form.description.trim() || null,
-          shortDescription: form.shortDescription.trim() || null,
+          shortDescription: cleanLegacyTag(form.shortDescription) || null,
         },
       ],
     };
@@ -565,6 +566,19 @@ export function AdminCelebrationsPage() {
       setSaving(false);
       setError(action.payload?.message || "No se pudo guardar la fiesta");
       return;
+    }
+
+    // Fallback: POST /admin/celebrations/{id}/books si el create no persistió bookAssociations
+    if (!editingId) {
+      const createdId = action.payload?.id;
+      const assoc = buildBookAssociationFromForm();
+      if (createdId && assoc) {
+        try {
+          await celebrationsService.addBook(createdId, assoc);
+        } catch {
+          /* ya vino en create o endpoint no disponible */
+        }
+      }
     }
 
     setSaving(false);

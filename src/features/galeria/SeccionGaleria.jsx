@@ -23,11 +23,11 @@ import { fotoPortada, tieneFotosApi } from "../../utils/galeria";
 
 function useFiestas() {
   const dispatch = useDispatch();
-  const { publicItems, localItems, source, status } = useSelector((s) => s.celebrations);
+  const { publicItems, localItems, source } = useSelector((s) => s.celebrations);
 
   useEffect(() => {
-    if (status === "idle") dispatch(fetchPublicCelebrations());
-  }, [dispatch, status]);
+    dispatch(fetchPublicCelebrations());
+  }, [dispatch]);
 
   return useMemo(
     () => selectFiestasForUi({ publicItems, localItems, source }),

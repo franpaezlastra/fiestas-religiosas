@@ -10,6 +10,29 @@ export function parseLegacyId(shortDescription) {
   return m ? Number(m[1]) : null;
 }
 
+/** Limpia tags de seed (legacyId:N) que no deben mostrarse como copy. */
+export function cleanLegacyTag(text) {
+  return String(text || "")
+    .replace(/legacyId:\s*\d+/gi, "")
+    .replace(/legacySantosId:\s*\d+/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * Relación libro ↔ celebración (API: books[] / bookAssociations[]).
+ * Prisma BookCelebration: mapNumber, chapterNumber, pageReference.
+ */
+export function celebrationBookLink(item) {
+  const rows = item?.books || item?.bookAssociations || [];
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return [...rows].sort((a, b) => {
+    const am = a.mapNumber ?? a.displayNumber ?? 9999;
+    const bm = b.mapNumber ?? b.displayNumber ?? 9999;
+    return Number(am) - Number(bm);
+  })[0];
+}
+
 /** Número visible en pin/lista (libro). La identidad React es `id`. */
 export function fiestaNumero(f) {
   if (f?.numero != null && f.numero !== "") return f.numero;
@@ -128,23 +151,35 @@ function fechaIsoFromSchedule(schedule, local) {
 
 /**
  * Convierte una celebración pública del API al shape del mapa/calendario.
- * `id` = uuid API (clave única). `numero` = número de libro / displayOrder.
+ * Número de fiesta: books[].mapNumber → bookNumber → displayOrder.
+ * No usar shortDescription (ahí el seed metía legacyId:N).
  */
 export function celebrationToFiesta(item) {
   const tr = translationOf(item);
   const schedule = scheduleOf(item);
   const scheduleTr = scheduleTranslation(schedule);
+  const book = celebrationBookLink(item);
+
+  const numero =
+    (book?.mapNumber != null ? Number(book.mapNumber) : null) ??
+    (book?.displayNumber != null ? Number(book.displayNumber) : null) ??
+    (typeof item.bookNumber === "number" ? item.bookNumber : null) ??
+    (typeof item.displayOrder === "number" ? item.displayOrder : null) ??
+    null;
+
+  // Mock local solo para campos que el API todavía no manda (región, tipo fino, etc.)
   const legacyId = parseLegacyId(tr?.shortDescription);
-  const local = legacyId != null ? localById.get(legacyId) : null;
+  const local =
+    (numero != null ? localById.get(Number(numero)) : null) ||
+    (legacyId != null ? localById.get(legacyId) : null) ||
+    null;
 
   const fotos = celebrationImageUrls(item);
 
-  const numero =
-    (typeof item.bookNumber === "number" ? item.bookNumber : null) ??
-    legacyId ??
-    (typeof item.displayOrder === "number" ? item.displayOrder : null) ??
-    local?.id ??
-    null;
+  const capitulo =
+    book?.chapterNumber ?? item.bookChapter ?? local?.capitulo ?? null;
+  const paginas =
+    book?.pageReference ?? item.bookPages ?? local?.paginas ?? null;
 
   return {
     id: item.id,
@@ -154,18 +189,18 @@ export function celebrationToFiesta(item) {
     lugar: item.locality || item.placeName || local?.lugar || "",
     provincia: item.province?.name || local?.provincia || "",
     provinceId: item.province?.id || null,
-    // region / mapKind / inBook: del API si existen; si no, mock local
     region: item.region || local?.region || null,
     fecha: scheduleTr?.dateDescription || local?.fecha || "",
     fechaISO_referencia: fechaIsoFromSchedule(schedule, local),
     mes: mesFromSchedule(schedule, local),
     tipo: item.mapKind || tipoFromSchedule(schedule, local),
-    capitulo: item.bookChapter ?? local?.capitulo ?? null,
-    paginas: item.bookPages ?? local?.paginas ?? null,
+    capitulo,
+    paginas,
     lat: item.latitude != null ? Number(item.latitude) : local?.lat ?? null,
     lng: item.longitude != null ? Number(item.longitude) : local?.lng ?? null,
-    enLibro: item.inBook ?? local?.enLibro ?? true,
+    enLibro: item.inBook ?? (book != null ? true : local?.enLibro ?? true),
     showOnMap: item.showOnMap !== false,
+    bookId: book?.bookId || book?.book?.id || null,
     fotos,
     source: "api",
   };

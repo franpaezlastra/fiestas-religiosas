@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { peopleService } from "../../services";
+import { booksService, peopleService } from "../../services";
 import {
   archivePerson,
   createPerson,
@@ -10,6 +10,7 @@ import {
 import { fetchAdminBooks } from "../../redux/slices/booksSlice";
 import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
 import { slugify } from "../../utils/slugify";
+import { cleanLegacyTag } from "../../utils/celebrationsAdapter";
 import { useAdminPagination } from "../hooks/useAdminPagination";
 import { AdminButton } from "../components/AdminButton";
 import { useAdminConfirm } from "../components/AdminConfirm";
@@ -100,7 +101,10 @@ function dateInputValue(value) {
 
 function formFromDetail(detail) {
   const tr = detail.translations?.find((t) => t.locale === "es") || detail.translations?.[0];
-  const assoc = detail.bookAssociations?.[0] || detail.books?.[0];
+  const assoc =
+    detail.bookAppearances?.[0] ||
+    detail.bookAssociations?.[0] ||
+    detail.books?.[0];
   return {
     displayName: tr?.displayName || "",
     slug: tr?.slug || "",
@@ -115,7 +119,7 @@ function formFromDetail(detail) {
     featuredDisplayOrder:
       detail.featuredDisplayOrder != null ? String(detail.featuredDisplayOrder) : "",
     status: detail.status || "DRAFT",
-    shortBio: tr?.shortBio || "",
+    shortBio: cleanLegacyTag(tr?.shortBio),
     biography: tr?.biography || "",
     bookId: assoc?.bookId || assoc?.book?.id || "",
     displayNumber: assoc?.displayNumber != null ? String(assoc.displayNumber) : "",
@@ -130,7 +134,7 @@ function buildTranslations(form) {
       locale: "es",
       displayName: form.displayName.trim(),
       slug: (form.slug || slugify(form.displayName)).trim(),
-      shortBio: form.shortBio.trim() || null,
+      shortBio: cleanLegacyTag(form.shortBio) || null,
       biography: form.biography.trim() || null,
       birthPlace: form.birthPlace.trim() || null,
     },
@@ -310,6 +314,37 @@ export function AdminPeoplePage() {
     return [assoc];
   }
 
+  /** POST /admin/books/{bookId}/people — relación displayNumber (no shortBio). */
+  async function syncBookAppearance(personId, previousBookId = null) {
+    const assocs = buildBookAssociations();
+    if (!personId || assocs.length === 0) return;
+    const a = assocs[0];
+    if (previousBookId && previousBookId !== a.bookId) {
+      try {
+        await booksService.removePerson(previousBookId, personId);
+      } catch {
+        /* puede no existir */
+      }
+    }
+    try {
+      if (previousBookId === a.bookId) {
+        try {
+          await booksService.removePerson(a.bookId, personId);
+        } catch {
+          /* ok */
+        }
+      }
+      await booksService.addPerson(a.bookId, {
+        personId,
+        displayNumber: a.displayNumber,
+        chapterNumber: a.chapterNumber ?? null,
+        pageReference: a.pageReference ?? null,
+      });
+    } catch (err) {
+      console.warn("[people] book appearance:", err.message);
+    }
+  }
+
   async function onAddImage() {
     if (!selectedMediaId) return;
 
@@ -409,12 +444,26 @@ export function AdminPeoplePage() {
     setSaving(true);
 
     const body = buildScalarBody();
+    let linkedBookBefore = null;
 
     if (!editingId) {
       body.images = serializeImages(personImages, form.displayName);
       body.bookAssociations = buildBookAssociations();
     } else if (imagesDirty) {
       body.images = serializeImages(personImages, form.displayName);
+    }
+
+    if (editingId) {
+      try {
+        const detail = await peopleService.adminGet(editingId);
+        const prev =
+          detail.bookAppearances?.[0] ||
+          detail.bookAssociations?.[0] ||
+          detail.books?.[0];
+        linkedBookBefore = prev?.bookId || prev?.book?.id || null;
+      } catch {
+        linkedBookBefore = null;
+      }
     }
 
     const action = editingId
@@ -425,6 +474,12 @@ export function AdminPeoplePage() {
       setSaving(false);
       setError(action.payload?.message || "No se pudo guardar la persona");
       return;
+    }
+
+    const saved = action.payload;
+    const personId = editingId || saved?.id;
+    if (personId && form.bookId && form.displayNumber.trim()) {
+      await syncBookAppearance(personId, linkedBookBefore);
     }
 
     setSaving(false);
@@ -725,54 +780,64 @@ export function AdminPeoplePage() {
               </div>
             </AdminSection>
 
-            {!editingId ? (
-              <AdminSection
-                title="Asociación a libro"
-                description="Opcional al crear (bookAssociations). Después se gestiona desde Libros."
+            <AdminSection
+              title="Asociación a libro"
+              description={
+                editingId
+                  ? "POST /admin/books/{bookId}/people — displayNumber es el nº del mapa de santos (no va en shortBio)."
+                  : "Al crear: bookAssociations en el body, o el mismo endpoint de libros."
+              }
+            >
+              <AdminField label="Libro" span={2}>
+                <AdminSelect
+                  value={form.bookId}
+                  onChange={(e) => setField("bookId", e.target.value)}
+                >
+                  <option value="">Sin libro</option>
+                  {books.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {bookTitle(b)}
+                    </option>
+                  ))}
+                </AdminSelect>
+              </AdminField>
+              <AdminField
+                label="Nº visible"
+                hint="displayNumber (mapa de santos)"
+                required={Boolean(form.bookId)}
               >
-                <AdminField label="Libro" span={2}>
-                  <AdminSelect
-                    value={form.bookId}
-                    onChange={(e) => setField("bookId", e.target.value)}
-                  >
-                    <option value="">Sin libro</option>
-                    {books.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {bookTitle(b)}
-                      </option>
-                    ))}
-                  </AdminSelect>
-                </AdminField>
-                <AdminField label="Nº visible" hint="displayNumber (mapa de santos)" required={Boolean(form.bookId)}>
-                  <AdminInput
-                    type="number"
-                    min={1}
-                    required={Boolean(form.bookId)}
-                    value={form.displayNumber}
-                    onChange={(e) => setField("displayNumber", e.target.value)}
-                    placeholder="ej. 12"
-                  />
-                </AdminField>
-                <AdminField label="Capítulo">
-                  <AdminInput
-                    type="number"
-                    min={1}
-                    value={form.chapterNumber}
-                    onChange={(e) => setField("chapterNumber", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Páginas" span={2}>
-                  <AdminInput
-                    value={form.pageReference}
-                    onChange={(e) => setField("pageReference", e.target.value)}
-                    placeholder='ej. "40-41"'
-                  />
-                </AdminField>
-              </AdminSection>
-            ) : null}
+                <AdminInput
+                  type="number"
+                  min={1}
+                  required={Boolean(form.bookId)}
+                  value={form.displayNumber}
+                  onChange={(e) => setField("displayNumber", e.target.value)}
+                  placeholder="ej. 12"
+                />
+              </AdminField>
+              <AdminField label="Capítulo">
+                <AdminInput
+                  type="number"
+                  min={1}
+                  value={form.chapterNumber}
+                  onChange={(e) => setField("chapterNumber", e.target.value)}
+                />
+              </AdminField>
+              <AdminField label="Páginas" span={2}>
+                <AdminInput
+                  value={form.pageReference}
+                  onChange={(e) => setField("pageReference", e.target.value)}
+                  placeholder='ej. "40-41"'
+                />
+              </AdminField>
+            </AdminSection>
 
             <AdminSection title="Biografía">
-              <AdminField label="Bio corta" span={2}>
+              <AdminField
+                label="Bio corta"
+                hint="Texto legible. No uses legacySantosId ni números de mapa acá."
+                span={2}
+              >
                 <AdminTextarea
                   rows={3}
                   value={form.shortBio}

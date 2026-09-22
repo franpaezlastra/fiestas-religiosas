@@ -10,6 +10,12 @@ export const fetchPublicVideos = createAsyncThunk(
       return rejectWithValue({ message: error.message });
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().videos.status;
+      return s === "idle" || s === "failed";
+    },
+  },
 );
 
 export const fetchAdminVideos = createAsyncThunk(

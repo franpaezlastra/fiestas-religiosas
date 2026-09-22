@@ -1,10 +1,18 @@
-import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { fetchPublicSocial } from "../../redux/slices/socialSlice";
+import { fetchPublicVideos } from "../../redux/slices/videosSlice";
 
 export function SeccionVideo() {
+  const dispatch = useDispatch();
   const videos = useSelector((state) => state.videos.publicItems);
   const published = videos.filter((v) => v.status === "PUBLISHED" || v.externalId);
+
+  useEffect(() => {
+    dispatch(fetchPublicVideos());
+  }, [dispatch]);
 
   return (
     <section>
@@ -51,7 +59,12 @@ export function SeccionVideo() {
 }
 
 export function SeccionRedes() {
+  const dispatch = useDispatch();
   const links = useSelector((state) => state.social.publicItems);
+
+  useEffect(() => {
+    dispatch(fetchPublicSocial());
+  }, [dispatch]);
 
   return (
     <section>

@@ -11,6 +11,12 @@ export const fetchPublicTimelines = createAsyncThunk(
       return rejectWithValue({ message: error.message });
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().timelines.status;
+      return s === "idle" || s === "failed";
+    },
+  },
 );
 
 export const fetchAdminTimelines = createAsyncThunk(

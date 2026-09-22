@@ -12,6 +12,12 @@ export const fetchPublicCelebrations = createAsyncThunk(
       return rejectWithValue({ message: error.message, code: error.code });
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().celebrations.status;
+      return s === "idle" || s === "failed";
+    },
+  },
 );
 
 export const fetchAdminCelebrations = createAsyncThunk(

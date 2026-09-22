@@ -3,19 +3,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+/** Terna visual del libro (págs. 26–27). Fotos = WebP desde PSD del Drive. */
 export const HITOS_ARGENTINA = [
 {
   id: "nace",
@@ -33,6 +21,9 @@ export const HITOS_ARGENTINA = [
   marca: "1940",
   lugar: "Membrillar 531, Flores",
   titulo: "Infancia con sus hermanos",
+  foto: "/images/timeline/infancia-hermanos.webp",
+  fotoAlt: "Familia Bergoglio: Regina con sus hijos",
+  fotoForma: "retrato",
   texto:
   "Junto a sus cuatro hermanos, vivió su infancia en Membrillar 531, Flores, siendo el primer hijo de Mario Bergoglio y su esposa, Regina María Sívori."
 },
@@ -42,6 +33,9 @@ export const HITOS_ARGENTINA = [
   marca: "Infancia",
   lugar: "Av. Directorio 2138, Flores",
   titulo: "Jardín y Primera Comunión",
+  foto: "/images/timeline/nino-comunion.webp",
+  fotoAlt: "Jorge Bergoglio niño de Primera Comunión",
+  fotoForma: "retrato",
   texto:
   "Jorge Bergoglio ingresó a este jardín de infantes en Instituto Nuestra Señora de la Misericordia y, más tarde, tomó allí su Primera Comunión."
 },
@@ -69,7 +63,7 @@ export const HITOS_ARGENTINA = [
   marca: "1950",
   lugar: "Virgilio 1980, Monte Castro",
   titulo: "Técnico químico",
-  foto: "/images/timeline/nino.png",
+  foto: "/images/timeline/nino.webp",
   fotoAlt: "Jorge Bergoglio en edad escolar",
   fotoForma: "retrato",
   texto:
@@ -90,7 +84,7 @@ export const HITOS_ARGENTINA = [
   marca: "A los 22",
   lugar: "José Cubas 3543, Villa Devoto",
   titulo: "Seminario y Compañía de Jesús",
-  foto: "/images/timeline/ihs.png",
+  foto: "/images/timeline/ihs.webp",
   fotoAlt: "Sello de la Compañía de Jesús",
   fotoForma: "logo",
   texto:
@@ -102,8 +96,8 @@ export const HITOS_ARGENTINA = [
   marca: "1964–65",
   lugar: "Santa Fe",
   titulo: "Maestrillo en Santa Fe",
-  foto: "/images/timeline/sacerdote.png",
-  fotoAlt: "Bergoglio sacerdote, con un libro",
+  foto: "/images/timeline/sacerdote.webp",
+  fotoAlt: "Bergoglio sacerdote joven, con un libro",
   fotoForma: "retrato",
   texto:
   "Se traslada a Santa Fe. Colegio de la Inmaculada Concepción de Santa Fe (Manzana Jesuítica). Maestrillo y profesor de Lengua y Literatura (años 1964 y 1965). Conoce a Jorge Luis Borges."
@@ -123,7 +117,7 @@ export const HITOS_ARGENTINA = [
   fecha: "16 de julio de 1990",
   lugar: "Córdoba",
   titulo: "Residencia de la Compañía de Jesús",
-  foto: "/images/timeline/obispo.png",
+  foto: "/images/timeline/obispo.webp",
   fotoAlt: "Bergoglio con sotana y cruz pectoral",
   fotoForma: "retrato",
   texto:
@@ -152,7 +146,7 @@ export const HITOS_ARGENTINA = [
   marca: "1998–2013",
   lugar: "Catedral Metropolitana",
   titulo: "Arzobispo de Buenos Aires",
-  foto: "/images/timeline/cardenal.png",
+  foto: "/images/timeline/cardenal.webp",
   fotoAlt: "Cardenal Bergoglio con mitra y cirio",
   fotoForma: "retrato",
   texto:
@@ -168,7 +162,7 @@ export const HITOS_PAPADO = [
   fecha: "13 de marzo",
   lugar: "Ciudad del Vaticano",
   titulo: "Cónclave",
-  foto: "/images/timeline/conclave.png",
+  foto: "/images/timeline/conclave.webp",
   fotoAlt: "Francisco saluda tras el cónclave",
   fotoForma: "retrato",
   texto:
@@ -182,8 +176,8 @@ export const HITOS_PAPADO = [
   fecha: "19 de marzo",
   lugar: "Plaza de San Pedro",
   titulo: "Entronizado",
-  foto: "/images/timeline/entronizado.png",
-  fotoAlt: "Francisco entronizado el día de San José",
+  foto: "/images/timeline/entronizado.webp",
+  fotoAlt: "Francisco con la férula papal",
   fotoForma: "retrato",
   texto: "Entronizado como papa Francisco el día de San José."
 },
@@ -203,7 +197,7 @@ export const HITOS_PAPADO = [
   fecha: "23 al 28 de julio",
   lugar: "Río de Janeiro",
   titulo: "JMJ en Río",
-  foto: "/images/timeline/jmj-rio.png",
+  foto: "/images/timeline/jmj-rio.webp",
   fotoAlt: "Logo de la JMJ Río 2013",
   fotoForma: "logo",
   texto:
@@ -223,6 +217,9 @@ export const HITOS_PAPADO = [
   marca: "2015",
   lugar: "Roma",
   titulo: "Jubileo de la Misericordia",
+  foto: "/images/timeline/misericordia.webp",
+  fotoAlt: "Logo del Jubileo de la Misericordia",
+  fotoForma: "logo",
   texto: "Jubileo de la Misericordia. Exhortación Laudato si’."
 },
 {
@@ -240,6 +237,9 @@ export const HITOS_PAPADO = [
   fecha: "19 de marzo",
   lugar: "Roma",
   titulo: "Gaudete et exsultate",
+  foto: "/images/timeline/cruz-gaudete.webp",
+  fotoAlt: "Cruz",
+  fotoForma: "logo",
   texto: "Exhortación apostólica Gaudete et exsultate (Alégrense y regocíjense)."
 },
 {
@@ -266,7 +266,7 @@ export const HITOS_PAPADO = [
   marca: "2020",
   lugar: "Plaza de San Pedro",
   titulo: "Pandemia mundial",
-  foto: "/images/timeline/pandemia.png",
+  foto: "/images/timeline/pandemia.webp",
   fotoAlt: "Francisco solo en la Plaza de San Pedro durante la pandemia",
   fotoForma: "retrato",
   texto: "Pandemia mundial."
@@ -322,6 +322,9 @@ export const HITOS_PAPADO = [
   fecha: "14 de enero",
   lugar: "Roma",
   titulo: "Autobiografía Esperanza",
+  foto: "/images/timeline/esperanza.webp",
+  fotoAlt: "Logo Giubileo 2025 — Pellegrini di speranza",
+  fotoForma: "logo",
   texto: "Autobiografía Esperanza."
 },
 {
@@ -331,8 +334,8 @@ export const HITOS_PAPADO = [
   fecha: "20 de abril",
   lugar: "Plaza de San Pedro",
   titulo: "Urbi et orbi de Pascua",
-  foto: "/images/timeline/urbi.png",
-  fotoAlt: "Francisco saluda en la bendición Urbi et orbi de Pascua",
+  foto: "/images/timeline/urbi.webp",
+  fotoAlt: "Francisco en la bendición Urbi et orbi de Pascua",
   fotoForma: "retrato",
   texto:
   "El Día de Pascuas da la bendición “Urbi et orbi” dejando sus últimas fuerzas a su pueblo. Al día siguiente fallecería."
@@ -344,6 +347,9 @@ export const HITOS_PAPADO = [
   fecha: "21 de abril",
   lugar: "Casa Santa Marta",
   titulo: "Partida",
+  foto: "/images/timeline/partida.webp",
+  fotoAlt: "Manos de Francisco con el rosario",
+  fotoForma: "retrato",
   texto: "Fallece a las 7.35 de la mañana a los 88 años de edad.",
   destacado: "partida"
 }];

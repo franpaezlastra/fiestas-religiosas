@@ -1,5 +1,32 @@
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { fetchPublicBooks } from "../../redux/slices/booksSlice";
+
+function bookTitle(book) {
+  return (
+    book.translation?.title ||
+    book.translations?.find((t) => t.locale === "es")?.title ||
+    book.isbn
+  );
+}
+
+function bookCoverUrl(book) {
+  const imgs = book.images || [];
+  const cover =
+    imgs.find((i) => i.imageRole === "COVER") ||
+    imgs.find((i) => i.isPrimary) ||
+    imgs[0];
+  const media = cover?.media || cover;
+  if (!media) return null;
+  if (media.url) return media.url;
+  if (media.storageKey) {
+    const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
+    return `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
+  }
+  return null;
+}
 
 export function SeccionCreditos() {
   return (
@@ -8,22 +35,22 @@ export function SeccionCreditos() {
       <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
         <dl className="divide-y divide-azul-logo/15 leading-relaxed">
           {[
-          ["Idea, edición general y fotografías", "Federico Lanati"],
-          ["Editores", "Juan Travnik y Gustavo Tarchini"],
-          ["Corrección de estilo (español)", "Magena Valentié"],
-          ["Diseño", "Estudio Massolo — Fabio Massolo"],
-          ["Infografías", "Daniel Fontanarrosa"],
-          ["Ilustración", "Alfredo Sabat"],
-          ["Fotocromía", "Estudio Ricardo Farías"],
-          ["Impresión", "Akian Gráfica Editora"],
-          ["Traducción al inglés", "Florencia Paz"],
-          ["Revisión general", "Valeria Cangemi"]].
-          map(([cargo, nombre]) =>
-          <div key={cargo} className="reveal-scroll py-4">
+            ["Idea, edición general y fotografías", "Federico Lanati"],
+            ["Editores", "Juan Travnik y Gustavo Tarchini"],
+            ["Corrección de estilo (español)", "Magena Valentié"],
+            ["Diseño", "Estudio Massolo — Fabio Massolo"],
+            ["Infografías", "Daniel Fontanarrosa"],
+            ["Ilustración", "Alfredo Sabat"],
+            ["Fotocromía", "Estudio Ricardo Farías"],
+            ["Impresión", "Akian Gráfica Editora"],
+            ["Traducción al inglés", "Florencia Paz"],
+            ["Revisión general", "Valeria Cangemi"],
+          ].map(([cargo, nombre]) => (
+            <div key={cargo} className="reveal-scroll py-4">
               <dt className="font-medium text-azul-petroleo">{cargo}</dt>
               <dd>{nombre}</dd>
             </div>
-          )}
+          ))}
         </dl>
 
         <p className="mt-8 font-light">Edición bilingüe. Tirada: 1000 ejemplares.</p>
@@ -59,46 +86,85 @@ export function SeccionCreditos() {
           Cultura Popular. 3. Peregrinación. CDD 200.
         </p>
       </div>
-    </section>);
-
+    </section>
+  );
 }
 
 export function SeccionTapa() {
+  const dispatch = useDispatch();
+  const books = useSelector((s) => s.books.publicItems);
+  const book = useMemo(() => {
+    const list = Array.isArray(books) ? books : [];
+    return (
+      list.find((b) => String(b.isbn || "").includes("978-631-01-7027")) ||
+      list.find((b) => b.status === "PUBLISHED") ||
+      list[0] ||
+      null
+    );
+  }, [books]);
+
+  useEffect(() => {
+    dispatch(fetchPublicBooks());
+  }, [dispatch]);
+
+  const cover = bookCoverUrl(book);
+  const tr =
+    book?.translation ||
+    book?.translations?.find((t) => t.locale === "es") ||
+    book?.translations?.[0];
+
   return (
     <section>
       <Portadilla
         id="tapa"
         titulo="Tapa, contratapa e ISBN"
-        kicker="Cover, back cover and ISBN" />
-      
+        kicker="Cover, back cover and ISBN"
+      />
+
       <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
         <p className="font-light leading-relaxed">
-          ISBN 978-631-01-7027-5. La foto de tapa es la Virgen del Valle en Catamarca, cada 8 de
-          diciembre.
+          {tr?.description ||
+            "ISBN 978-631-01-7027-5. La foto de tapa es la Virgen del Valle en Catamarca, cada 8 de diciembre."}
         </p>
+        {book ? (
+          <p className="mt-4 text-sm font-light">
+            <span className="font-medium text-azul-petroleo">{bookTitle(book)}</span>
+            {book.isbn ? ` · ISBN ${book.isbn}` : null}
+            {book.publisher ? ` · ${book.publisher}` : null}
+            {book.pageCount ? ` · ${book.pageCount} pág.` : null}
+          </p>
+        ) : null}
         <figure className="mt-10">
           <div className="foto-libro mx-auto max-w-xl aspect-[3/4]">
             <img
-              src="/images/tapa-tipografica.jpg"
-              alt="Página de título tipográfica del libro Peregrinos" />
-            
+              src={cover || "/images/tapa-tipografica.jpg"}
+              alt={
+                cover
+                  ? `Tapa de ${bookTitle(book)}`
+                  : "Página de título tipográfica del libro Peregrinos"
+              }
+            />
           </div>
           <figcaption className="mt-2 text-sm">
-            Página de título del interior. La tapa ilustrada con la foto de la Virgen del Valle no
-            forma parte de este PDF de interiores.
+            {cover
+              ? "Tapa del libro (API)."
+              : "Página de título del interior. La tapa ilustrada con la foto de la Virgen del Valle no forma parte de este PDF de interiores."}
             <span className="caption-en block">
-              Interior title page. The photographic cover is not included in this interior PDF.
+              {cover
+                ? "Book cover from the API."
+                : "Interior title page. The photographic cover is not included in this interior PDF."}
             </span>
           </figcaption>
         </figure>
-        <div className="mt-8">
-          {/* PENDIENTE: archivo de tapa/contratapa en alta resolución */}
-          <Pendiente titulo="Pendiente — tapa y contratapa en alta">
-            Confirmar con el cliente si tiene el archivo de tapa y contratapa (con QR e ISBN) en alta
-            resolución, aparte del PDF interior.
-          </Pendiente>
-        </div>
+        {!book ? (
+          <div className="mt-8">
+            <Pendiente titulo="Pendiente — libro en el API">
+              Todavía no hay un libro publicado en /public/books. Cargalo desde el admin (ISBN
+              978-631-01-7027-5) o corré el seed.
+            </Pendiente>
+          </div>
+        ) : null}
       </div>
-    </section>);
-
+    </section>
+  );
 }

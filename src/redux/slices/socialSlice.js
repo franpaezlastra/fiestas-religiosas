@@ -10,6 +10,12 @@ export const fetchPublicSocial = createAsyncThunk(
       return rejectWithValue({ message: error.message });
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().social.status;
+      return s === "idle" || s === "failed";
+    },
+  },
 );
 
 export const fetchAdminSocial = createAsyncThunk(

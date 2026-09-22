@@ -786,8 +786,8 @@ select:focus-visible {
   flex: none;
   width: auto;
   height: auto;
-  max-width: 5.5rem;
-  max-height: 6.25rem;
+  max-width: 7.5rem;
+  max-height: 9rem;
   object-fit: contain;
 }
 

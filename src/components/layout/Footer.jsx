@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { NAV_LIBRO, NAV_PRINCIPAL } from "../../utils/nav";
 import { Logo } from "../../components/ui/Logo";
+import { fetchPublicSocial } from "../../redux/slices/socialSlice";
 
 const PLATFORM_LABEL = {
   INSTAGRAM: "Instagram",
@@ -72,7 +73,12 @@ function SocialIconLink({ platform, url }) {
 }
 
 export function Footer() {
+  const dispatch = useDispatch();
   const links = useSelector((state) => state.social.publicItems);
+
+  useEffect(() => {
+    dispatch(fetchPublicSocial());
+  }, [dispatch]);
 
   const sortedLinks = useMemo(() => {
     if (!Array.isArray(links) || links.length === 0) return [];

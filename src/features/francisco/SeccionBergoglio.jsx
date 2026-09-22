@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ARGENTINOS_FAMOSOS } from "../../data/argentinos";
 import { LineaTiempo } from "../../components/timeline/LineaTiempo";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { fetchPublicFeatured } from "../../redux/slices/peopleSlice";
+import { fetchPublicTimelines } from "../../redux/slices/timelinesSlice";
+import { selectFeaturedForUi } from "../../utils/peopleAdapter";
 import { selectFranciscoTimelines } from "../../utils/timelinesAdapter";
 
 const FRASES_FRANCISCO = [
@@ -28,12 +31,17 @@ function irA(id) {
 }
 
 export function SeccionBergoglio() {
+  const dispatch = useDispatch();
   const [tramo, setTramo] = useState("argentina");
   const publicItems = useSelector((s) => s.timelines.publicItems);
   const { argentina, papado, aniosPapado } = useMemo(
     () => selectFranciscoTimelines(publicItems),
     [publicItems],
   );
+
+  useEffect(() => {
+    dispatch(fetchPublicTimelines());
+  }, [dispatch]);
 
   useEffect(() => {
     function sync() {
@@ -202,6 +210,15 @@ export function SeccionBergoglio() {
 }
 
 export function SeccionTresArgentinos() {
+  const dispatch = useDispatch();
+  const featuredItems = useSelector((s) => s.people.featuredItems);
+  const fromApi = useMemo(() => selectFeaturedForUi(featuredItems), [featuredItems]);
+  const personas = fromApi?.length ? fromApi : ARGENTINOS_FAMOSOS;
+
+  useEffect(() => {
+    dispatch(fetchPublicFeatured());
+  }, [dispatch]);
+
   return (
     <section>
       <Portadilla
@@ -213,8 +230,12 @@ export function SeccionTresArgentinos() {
         <figure>
           <div className="foto-libro bg-papel [&_img]:h-auto [&_img]:object-contain">
             <img
-              src="/images/argentinos-mas-famosos.jpg"
+              src="/images/argentinos-mas-famosos.webp"
               alt="Vitral con Diego Maradona, el papa Francisco y Lionel Messi"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/images/argentinos-mas-famosos.jpg";
+              }}
             />
           </div>
           <figcaption className="mt-3 text-sm">
@@ -224,13 +245,24 @@ export function SeccionTresArgentinos() {
         </figure>
 
         <ul className="mt-10 space-y-6">
-          {ARGENTINOS_FAMOSOS.map((a) => (
+          {personas.map((a) => (
             <li
-              key={a.nombre}
+              key={a.id || a.nombre}
               className="reveal-scroll border-b border-azul-logo/15 pb-6 last:border-0"
             >
-              <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
-              <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
+              <div className="flex gap-4">
+                {a.foto ? (
+                  <img
+                    src={a.foto}
+                    alt=""
+                    className="h-16 w-12 shrink-0 object-cover object-top"
+                  />
+                ) : null}
+                <div>
+                  <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
+                  <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

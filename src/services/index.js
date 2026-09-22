@@ -74,11 +74,21 @@ export const celebrationsService = {
 };
 
 export const peopleService = {
-  // Sin ?locale=es: Vercel CDN cacheó un HIT vacío en esa URL exacta
+  // Sin ?locale=es en list: Vercel CDN cacheó un HIT vacío en esa URL exacta
   publicList: (params = {}) => {
     const q = new URLSearchParams(params);
     const qs = q.toString();
     return api(`/public/people${qs ? `?${qs}` : ""}`);
+  },
+  /** Solo santos / beatos / causas (canonization). Preferido para /santos. */
+  publicHoliness: (params = {}) => {
+    const q = new URLSearchParams({ locale: "es", ...params });
+    return api(`/public/people/holiness?${q}`);
+  },
+  /** Destacados (isFeatured): Maradona, Francisco, Messi, etc. */
+  publicFeatured: (params = {}) => {
+    const q = new URLSearchParams({ locale: "es", ...params });
+    return api(`/public/people/featured?${q}`);
   },
   adminList: () => api("/admin/people"),
   adminGet: (id) => api(`/admin/people/${id}`),
