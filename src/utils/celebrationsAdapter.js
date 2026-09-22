@@ -174,7 +174,7 @@ export function celebrationToFiesta(item) {
     (legacyId != null ? localById.get(legacyId) : null) ||
     null;
 
-  const fotos = celebrationImageUrls(item);
+  const fotos = celebrationImageUrls(item, { maxWidth: 640 });
 
   const capitulo =
     book?.chapterNumber ?? item.bookChapter ?? local?.capitulo ?? null;

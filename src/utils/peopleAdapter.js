@@ -1,5 +1,5 @@
 import { SANTOS_BEATOS } from "../data/santos";
-import { cleanLegacyTag } from "./celebrationsAdapter";
+import { cleanLegacyTag, optimizeCloudinaryUrl } from "./celebrationsAdapter";
 
 const LOCAL_BY_ID = new Map(SANTOS_BEATOS.map((s) => [s.id, s]));
 
@@ -145,6 +145,7 @@ export function selectFeaturedForUi(featuredItems) {
         const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
         foto = `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
       }
+      foto = optimizeCloudinaryUrl(foto, 480);
       return {
         id: p.id,
         nombre: tr?.displayName || "Sin nombre",

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { booksService } from "../../services";
+import { shouldFetchPublic } from "../stale";
 
 export const fetchPublicBooks = createAsyncThunk(
   "books/fetchPublic",
@@ -13,8 +14,8 @@ export const fetchPublicBooks = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().books.publicStatus;
-      return s === "idle" || s === "failed";
+      const { publicStatus, lastFetchedAt } = getState().books;
+      return shouldFetchPublic(publicStatus, lastFetchedAt);
     },
   },
 );
@@ -69,6 +70,7 @@ const booksSlice = createSlice({
   initialState: {
     publicItems: [],
     publicStatus: "idle",
+    lastFetchedAt: null,
     adminItems: [],
     status: "idle",
     error: null,
@@ -82,6 +84,7 @@ const booksSlice = createSlice({
       .addCase(fetchPublicBooks.fulfilled, (state, action) => {
         state.publicItems = action.payload;
         state.publicStatus = "succeeded";
+        state.lastFetchedAt = Date.now();
       })
       .addCase(fetchPublicBooks.rejected, (state, action) => {
         state.publicStatus = "failed";

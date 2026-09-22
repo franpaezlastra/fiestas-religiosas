@@ -1,0 +1,46 @@
+{
+  "/": [
+    "/api/v1/public/social-links"
+  ],
+  "/mapa": [
+    "/api/v1/public/celebrations?locale=es",
+    "/api/v1/public/social-links"
+  ],
+  "/galeria": [
+    "/api/v1/public/celebrations?locale=es",
+    "/api/v1/public/social-links"
+  ],
+  "/francisco": [
+    "/api/v1/public/social-links",
+    "/api/v1/public/timelines"
+  ],
+  "/santos": [
+    "/api/v1/public/people",
+    "/api/v1/public/people/holiness?locale=es",
+    "/api/v1/public/social-links"
+  ],
+  "/video": [
+    "/api/v1/public/social-links",
+    "/api/v1/public/videos?locale=es"
+  ],
+  "/redes": [
+    "/api/v1/public/social-links"
+  ],
+  "/autor": [
+    "/api/v1/public/social-links"
+  ],
+  "/escritores": [
+    "/api/v1/public/social-links"
+  ],
+  "/creditos": [
+    "/api/v1/public/social-links"
+  ],
+  "/tres-argentinos": [
+    "/api/v1/public/people/featured?locale=es",
+    "/api/v1/public/social-links"
+  ],
+  "/el-libro": [
+    "/api/v1/public/books?locale=es",
+    "/api/v1/public/social-links"
+  ]
+}

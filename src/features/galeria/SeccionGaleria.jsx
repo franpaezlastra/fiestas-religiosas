@@ -4,12 +4,11 @@ import { useSearchParams } from "react-router-dom";
 import { GaleriaModal } from "../../components/gallery/GaleriaModal";
 import { ProtectedImage } from "../../components/gallery/ProtectedImage";
 import { Portadilla } from "../../components/ui/Portadilla";
-import { fetchPublicCelebrations } from "../../redux/slices/celebrationsSlice";
+import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { celebrationsService } from "../../services";
 import {
   celebrationImageUrls,
   fiestaNumero,
-  selectFiestasForUi,
 } from "../../utils/celebrationsAdapter";
 import {
   coincideFiltro,
@@ -23,16 +22,13 @@ import { fotoPortada, tieneFotosApi } from "../../utils/galeria";
 
 function useFiestas() {
   const dispatch = useDispatch();
-  const { publicItems, localItems, source } = useSelector((s) => s.celebrations);
+  const FIESTAS = useSelector(selectFiestasUi);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
   }, [dispatch]);
 
-  return useMemo(
-    () => selectFiestasForUi({ publicItems, localItems, source }),
-    [publicItems, localItems, source],
-  );
+  return FIESTAS;
 }
 
 function leerFiltros(params) {

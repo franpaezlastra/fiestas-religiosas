@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fiestaNumero, selectFiestasForUi } from "../../utils/celebrationsAdapter";
-import { fetchPublicCelebrations } from "../../redux/slices/celebrationsSlice";
+import { fiestaNumero } from "../../utils/celebrationsAdapter";
+import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 
 const MESES = [
   { n: 1, nombre: "Enero" },
@@ -25,21 +25,17 @@ function idsDe(activa) {
 
 export function Calendario({ fiestaActiva, onActiva }) {
   const dispatch = useDispatch();
-  const { publicItems, localItems, source } = useSelector((s) => s.celebrations);
+  const FIESTAS = useSelector(selectFiestasUi);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
   }, [dispatch]);
 
-  const FIESTAS = useMemo(
-    () => selectFiestasForUi({ publicItems, localItems, source }),
-    [publicItems, localItems, source],
-  );
-
   const activaIds = idsDe(fiestaActiva);
-  const enLibro = FIESTAS.filter((f) => f.enLibro);
-  const pendientes = FIESTAS.filter((f) => !f.enLibro);
-  const sinMes = enLibro.filter((f) => f.mes == null);
+  const enLibro = useMemo(() => FIESTAS.filter((f) => f.enLibro), [FIESTAS]);
+  const pendientes = useMemo(() => FIESTAS.filter((f) => !f.enLibro), [FIESTAS]);
+  const sinMes = useMemo(() => enLibro.filter((f) => f.mes == null), [enLibro]);
+
 
   function elegir(id) {
     onActiva(id);

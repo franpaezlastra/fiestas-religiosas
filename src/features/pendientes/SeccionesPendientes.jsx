@@ -1,14 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { createSelector } from "@reduxjs/toolkit";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { fetchPublicSocial } from "../../redux/slices/socialSlice";
 import { fetchPublicVideos } from "../../redux/slices/videosSlice";
 
+const selectPublishedVideos = createSelector(
+  [(s) => s.videos.publicItems],
+  (videos) =>
+    (Array.isArray(videos) ? videos : []).filter(
+      (v) => v.status === "PUBLISHED" || v.externalId,
+    ),
+);
+
 export function SeccionVideo() {
   const dispatch = useDispatch();
-  const videos = useSelector((state) => state.videos.publicItems);
-  const published = videos.filter((v) => v.status === "PUBLISHED" || v.externalId);
+  const published = useSelector(selectPublishedVideos);
 
   useEffect(() => {
     dispatch(fetchPublicVideos());

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { peopleService } from "../../services";
+import { shouldFetchPublic } from "../stale";
 
 /**
  * Preferí /public/people/holiness (solo santidad).
@@ -40,8 +41,8 @@ export const fetchPublicPeople = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().people.status;
-      return s === "idle" || s === "failed";
+      const { status, lastFetchedAt } = getState().people;
+      return shouldFetchPublic(status, lastFetchedAt);
     },
   },
 );
@@ -68,8 +69,8 @@ export const fetchPublicFeatured = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().people.featuredStatus;
-      return s === "idle" || s === "failed";
+      const { featuredStatus, featuredFetchedAt } = getState().people;
+      return shouldFetchPublic(featuredStatus, featuredFetchedAt);
     },
   },
 );
@@ -126,8 +127,10 @@ const peopleSlice = createSlice({
     fromHoliness: false,
     featuredItems: [],
     featuredStatus: "idle",
+    featuredFetchedAt: null,
     adminItems: [],
     status: "idle",
+    lastFetchedAt: null,
     error: null,
   },
   reducers: {},
@@ -147,6 +150,7 @@ const peopleSlice = createSlice({
           state.fromHoliness = Boolean(payload.fromHoliness);
         }
         state.status = "succeeded";
+        state.lastFetchedAt = Date.now();
       })
       .addCase(fetchPublicPeople.rejected, (state, action) => {
         state.status = "failed";
@@ -158,6 +162,7 @@ const peopleSlice = createSlice({
       .addCase(fetchPublicFeatured.fulfilled, (state, action) => {
         state.featuredItems = Array.isArray(action.payload) ? action.payload : [];
         state.featuredStatus = "succeeded";
+        state.featuredFetchedAt = Date.now();
       })
       .addCase(fetchPublicFeatured.rejected, (state) => {
         state.featuredStatus = "failed";

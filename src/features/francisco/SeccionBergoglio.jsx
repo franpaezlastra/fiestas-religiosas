@@ -139,6 +139,8 @@ export function SeccionBergoglio() {
             <img
               src="/images/tapas-diarios-eleccion.jpg"
               alt="Portadas de diarios y revistas argentinas el día de la elección del papa Francisco"
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <figcaption className="mx-auto max-w-5xl px-4 py-4 text-sm">

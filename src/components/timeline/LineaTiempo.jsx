@@ -131,6 +131,8 @@ export function LineaTiempo({ id, variante, hitos, ejeAnios }) {
                 <img
                   src={h.foto}
                   alt={h.fotoAlt ?? ""}
+                  loading="lazy"
+                  decoding="async"
                   className={`linea-foto${h.fotoForma === "logo" ? " is-logo" : ""}`}
                 />
               ) : null}

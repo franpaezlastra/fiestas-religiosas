@@ -1,6 +1,8 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { celebrationsService } from "../../services";
 import localFiestas from "../../data/fiestas.json";
+import { shouldFetchPublic } from "../stale";
+import { selectFiestasForUi } from "../../utils/celebrationsAdapter";
 
 export const fetchPublicCelebrations = createAsyncThunk(
   "celebrations/fetchPublic",
@@ -14,8 +16,8 @@ export const fetchPublicCelebrations = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().celebrations.status;
-      return s === "idle" || s === "failed";
+      const { status, lastFetchedAt } = getState().celebrations;
+      return shouldFetchPublic(status, lastFetchedAt);
     },
   },
 );
@@ -73,6 +75,7 @@ const celebrationsSlice = createSlice({
     localItems: localFiestas,
     adminItems: [],
     status: "idle",
+    lastFetchedAt: null,
     adminStatus: "idle",
     error: null,
     source: "local",
@@ -86,6 +89,7 @@ const celebrationsSlice = createSlice({
       })
       .addCase(fetchPublicCelebrations.fulfilled, (state, action) => {
         state.status = "succeeded";
+        state.lastFetchedAt = Date.now();
         state.publicItems = action.payload;
         state.source = action.payload.length > 0 ? "api" : "local";
       })
@@ -121,6 +125,17 @@ const celebrationsSlice = createSlice({
 
 export default celebrationsSlice.reducer;
 
-/** Fiestas listas para mapa/calendario (API o fallback local) */
+/** Fiestas listas para mapa/calendario (API o fallback local) — memoizado */
+export const selectCelebrationsState = (state) => state.celebrations;
+
+export const selectFiestasUi = createSelector([selectCelebrationsState], (c) =>
+  selectFiestasForUi({
+    publicItems: c.publicItems,
+    localItems: c.localItems,
+    source: c.source,
+  }),
+);
+
+/** Re-export del adaptador puro (tests / uso sin store) */
 export { selectFiestasForUi } from "../../utils/celebrationsAdapter";
 

@@ -1,15 +1,17 @@
 import { ANIOS_PAPADO, HITOS_ARGENTINA, HITOS_PAPADO } from "../data/bergoglio";
+import { optimizeCloudinaryUrl } from "./celebrationsAdapter";
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
 
 function eventImageUrl(image) {
   const media = image?.media || image;
   if (!media) return null;
-  if (media.url) return media.url;
-  if (media.storageKey) {
-    return `https://res.cloudinary.com/${CLOUD}/image/upload/${media.storageKey}`;
+  let url = null;
+  if (media.url) url = media.url;
+  else if (media.storageKey) {
+    url = `https://res.cloudinary.com/${CLOUD}/image/upload/${media.storageKey}`;
   }
-  return null;
+  return optimizeCloudinaryUrl(url, 720);
 }
 
 function primaryEventImage(event) {

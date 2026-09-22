@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { timelinesService } from "../../services";
+import { shouldFetchPublic } from "../stale";
 
 export const fetchPublicTimelines = createAsyncThunk(
   "timelines/fetchPublic",
@@ -13,8 +14,8 @@ export const fetchPublicTimelines = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().timelines.status;
-      return s === "idle" || s === "failed";
+      const { status, lastFetchedAt } = getState().timelines;
+      return shouldFetchPublic(status, lastFetchedAt);
     },
   },
 );
@@ -66,7 +67,13 @@ export const archiveTimeline = createAsyncThunk(
 
 const timelinesSlice = createSlice({
   name: "timelines",
-  initialState: { publicItems: [], adminItems: [], status: "idle", error: null },
+  initialState: {
+    publicItems: [],
+    adminItems: [],
+    status: "idle",
+    lastFetchedAt: null,
+    error: null,
+  },
   reducers: {},
   extraReducers: (builder) => {
     builder
@@ -77,6 +84,7 @@ const timelinesSlice = createSlice({
       .addCase(fetchPublicTimelines.fulfilled, (state, action) => {
         state.publicItems = action.payload;
         state.status = "succeeded";
+        state.lastFetchedAt = Date.now();
       })
       .addCase(fetchPublicTimelines.rejected, (state, action) => {
         state.status = "failed";
@@ -84,7 +92,6 @@ const timelinesSlice = createSlice({
       })
       .addCase(fetchAdminTimelines.fulfilled, (state, action) => {
         state.adminItems = action.payload;
-        state.status = "succeeded";
       })
       .addCase(createTimeline.fulfilled, (state, action) => {
         state.adminItems = [action.payload, ...state.adminItems];

@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { ESTILO_FISICO_POLITICO } from "../../utils/estiloMapa";
 import { capituloLabel, clusterFiestas, pinesSeparados } from "../../utils/geo";
 import { fotoPortada, fotosDe } from "../../utils/galeria";
-import { fiestaNumero, selectFiestasForUi } from "../../utils/celebrationsAdapter";
+import { fiestaNumero } from "../../utils/celebrationsAdapter";
 import {
   coincideFiltro,
   MESES,
@@ -14,7 +14,7 @@ import {
   provinciasDe,
   TIPOS_MAPA,
 } from "../../utils/fiestaFiltros";
-import { fetchPublicCelebrations } from "../../redux/slices/celebrationsSlice";
+import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { Boton } from "../../components/ui/Boton";
 import { ProtectedImage } from "../../components/gallery/ProtectedImage";
 
@@ -34,16 +34,13 @@ function idsDe(activa) {
 
 function useFiestas() {
   const dispatch = useDispatch();
-  const { publicItems, localItems, source } = useSelector((s) => s.celebrations);
+  const FIESTAS = useSelector(selectFiestasUi);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
   }, [dispatch]);
 
-  return useMemo(
-    () => selectFiestasForUi({ publicItems, localItems, source }),
-    [publicItems, localItems, source],
-  );
+  return FIESTAS;
 }
 
 function Detalle({ fiestas, onPick }) {
@@ -217,7 +214,10 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
     () => FIESTAS.filter((f) => coincideFiltro(f, { provincia, tipo, mes, q })),
     [FIESTAS, provincia, tipo, mes, q],
   );
-  const nacionales = filtradas.filter((f) => f.tipo === "nacional");
+  const nacionales = useMemo(
+    () => filtradas.filter((f) => f.tipo === "nacional"),
+    [filtradas],
+  );
   const pines = useMemo(
     () =>
       pinesSeparados(

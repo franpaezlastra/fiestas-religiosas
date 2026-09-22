@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { socialService } from "../../services";
+import { shouldFetchPublic } from "../stale";
 
 export const fetchPublicSocial = createAsyncThunk(
   "social/fetchPublic",
@@ -12,8 +13,8 @@ export const fetchPublicSocial = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().social.status;
-      return s === "idle" || s === "failed";
+      const { status, lastFetchedAt } = getState().social;
+      return shouldFetchPublic(status, lastFetchedAt);
     },
   },
 );
@@ -54,16 +55,30 @@ export const removeSocial = createAsyncThunk(
 
 const socialSlice = createSlice({
   name: "social",
-  initialState: { publicItems: [], adminItems: [], status: "idle", error: null },
+  initialState: {
+    publicItems: [],
+    adminItems: [],
+    status: "idle",
+    lastFetchedAt: null,
+    error: null,
+  },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(fetchPublicSocial.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(fetchPublicSocial.fulfilled, (state, action) => {
         state.publicItems = action.payload;
+        state.status = "succeeded";
+        state.lastFetchedAt = Date.now();
+      })
+      .addCase(fetchPublicSocial.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload?.message || null;
       })
       .addCase(fetchAdminSocial.fulfilled, (state, action) => {
         state.adminItems = action.payload;
-        state.status = "succeeded";
       })
       .addCase(upsertSocial.fulfilled, (state, action) => {
         const idx = state.adminItems.findIndex((s) => s.platform === action.payload.platform);

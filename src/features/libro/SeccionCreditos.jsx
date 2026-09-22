@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { fetchPublicBooks } from "../../redux/slices/booksSlice";
+import { optimizeCloudinaryUrl } from "../../utils/celebrationsAdapter";
 
 function bookTitle(book) {
   return (
@@ -13,6 +14,7 @@ function bookTitle(book) {
 }
 
 function bookCoverUrl(book) {
+  if (!book) return null;
   const imgs = book.images || [];
   const cover =
     imgs.find((i) => i.imageRole === "COVER") ||
@@ -20,12 +22,13 @@ function bookCoverUrl(book) {
     imgs[0];
   const media = cover?.media || cover;
   if (!media) return null;
-  if (media.url) return media.url;
-  if (media.storageKey) {
+  let url = null;
+  if (media.url) url = media.url;
+  else if (media.storageKey) {
     const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
-    return `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
+    url = `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
   }
-  return null;
+  return optimizeCloudinaryUrl(url, 800);
 }
 
 export function SeccionCreditos() {

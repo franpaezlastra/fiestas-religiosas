@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { videosService } from "../../services";
+import { shouldFetchPublic } from "../stale";
 
 export const fetchPublicVideos = createAsyncThunk(
   "videos/fetchPublic",
@@ -12,8 +13,8 @@ export const fetchPublicVideos = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const s = getState().videos.status;
-      return s === "idle" || s === "failed";
+      const { status, lastFetchedAt } = getState().videos;
+      return shouldFetchPublic(status, lastFetchedAt);
     },
   },
 );
@@ -65,16 +66,30 @@ export const archiveVideo = createAsyncThunk(
 
 const videosSlice = createSlice({
   name: "videos",
-  initialState: { publicItems: [], adminItems: [], status: "idle", error: null },
+  initialState: {
+    publicItems: [],
+    adminItems: [],
+    status: "idle",
+    lastFetchedAt: null,
+    error: null,
+  },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(fetchPublicVideos.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(fetchPublicVideos.fulfilled, (state, action) => {
         state.publicItems = action.payload;
+        state.status = "succeeded";
+        state.lastFetchedAt = Date.now();
+      })
+      .addCase(fetchPublicVideos.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload?.message || null;
       })
       .addCase(fetchAdminVideos.fulfilled, (state, action) => {
         state.adminItems = action.payload;
-        state.status = "succeeded";
       })
       .addCase(createVideo.fulfilled, (state, action) => {
         state.adminItems = [action.payload, ...state.adminItems];
