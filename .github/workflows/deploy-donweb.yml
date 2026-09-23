@@ -62,7 +62,9 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
+          # DonWeb/Ferozo exige TLS en el canal de control → FTPS implícito
+          protocol: ftps-legacy
+          port: 990
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           dangerous-clean-slate: false
