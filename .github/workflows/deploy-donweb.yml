@@ -1,12 +1,10 @@
 # Deploy → DonWeb public_html
 #
-# Push a main → build Vite → sube dist/ por FTPS (lftp)
-#
 # Secretos:
-#   FTP_SERVER       ej. c2662154.ferozo.com
-#   FTP_USERNAME     ej. c2662154  Ó  ftp@c2662154.ferozo.com
-#   FTP_PASSWORD
-#   FTP_SERVER_DIR   ej. /public_html/
+#   FTP_SERVER       c2662154.ferozo.com
+#   FTP_USERNAME     ftp@c2662154.ferozo.com   ← preferí este (Ferozo)
+#   FTP_PASSWORD     la del panel FTP (sin espacios)
+#   FTP_SERVER_DIR   /public_html/
 #   VITE_API_URL
 #   VITE_CLOUDINARY_CLOUD_NAME  (opcional)
 
@@ -67,29 +65,45 @@ jobs:
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
           set -euo pipefail
-          if [ -z "${FTP_SERVER:-}" ] || [ -z "${FTP_USERNAME:-}" ] || [ -z "${FTP_PASSWORD:-}" ]; then
+
+          # Trim espacios accidentales en secretos
+          FTP_SERVER="$(printf '%s' "$FTP_SERVER" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          FTP_USERNAME="$(printf '%s' "$FTP_USERNAME" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          FTP_PASSWORD="$(printf '%s' "$FTP_PASSWORD" | tr -d '\r')"
+          FTP_SERVER_DIR="$(printf '%s' "${FTP_SERVER_DIR:-/public_html/}" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USERNAME" ] || [ -z "$FTP_PASSWORD" ]; then
             echo "Faltan secretos FTP" >&2
             exit 1
           fi
-          TARGET="${FTP_SERVER_DIR:-/public_html/}"
+
+          TARGET="$FTP_SERVER_DIR"
           case "$TARGET" in
             */) ;;
             *) TARGET="${TARGET}/" ;;
           esac
 
-          echo "FTP host=$FTP_SERVER user=$FTP_USERNAME dir=$TARGET"
+          echo "FTP host=$FTP_SERVER user=$FTP_USERNAME dir=$TARGET pass_len=${#FTP_PASSWORD}"
 
-          # user + password por comando (soporta @ ! # en la pass)
-          lftp <<EOF
-          set cmd:fail-exit yes
-          set ftp:ssl-force true
-          set ftp:ssl-protect-data true
-          set ftp:passive-mode true
-          set ssl:verify-certificate no
-          set net:max-retries 3
-          set net:timeout 25
-          open ftp://${FTP_SERVER}
-          user ${FTP_USERNAME} ${FTP_PASSWORD}
-          mirror -R --verbose --parallel=2 --exclude-glob .git* --exclude-glob stats.html ./dist/ ${TARGET}
-          bye
+          # .netrc: la pass con @ no se rompe al parsear
+          cat > "$HOME/.netrc" <<EOF
+          machine ${FTP_SERVER}
+          login ${FTP_USERNAME}
+          password ${FTP_PASSWORD}
           EOF
+          chmod 600 "$HOME/.netrc"
+
+          lftp -e "
+            set cmd:fail-exit yes;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ftp:passive-mode true;
+            set ssl:verify-certificate no;
+            set net:max-retries 2;
+            set net:timeout 25;
+            open ftp://${FTP_SERVER};
+            mirror -R --verbose --parallel=2 --exclude-glob .git* --exclude-glob stats.html ./dist/ ${TARGET};
+            bye
+          "
+
+          rm -f "$HOME/.netrc"
