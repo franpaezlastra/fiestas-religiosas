@@ -13,8 +13,11 @@ dist-ssr
 dist-donweb.zip
 *.local
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+!.env.development
+!.env.production
 
 # PDF del libro (interiores en baja). No va al repo ni al deploy.
 *.pdf
