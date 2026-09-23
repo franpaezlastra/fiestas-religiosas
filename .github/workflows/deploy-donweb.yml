@@ -2,8 +2,8 @@
 #
 # Secretos:
 #   FTP_SERVER       c2662154.ferozo.com
-#   FTP_USERNAME     ftp@c2662154.ferozo.com  (o c2662154)
-#   FTP_PASSWORD
+#   FTP_USERNAME     c2662154  (también prueba ftp@c2662154.ferozo.com)
+#   FTP_PASSWORD     la de Ferozo / FTP
 #   FTP_SERVER_DIR   /public_html/
 #   VITE_API_URL
 #   VITE_CLOUDINARY_CLOUD_NAME  (opcional)
@@ -54,7 +54,6 @@ jobs:
             cp public/.htaccess dist/.htaccess
           fi
 
-      # DonWeb exige AUTH TLS antes de USER/PASS. ftplib.FTP_TLS lo hace bien.
       - name: Upload dist via FTPS (Python)
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -63,32 +62,71 @@ jobs:
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
           python3 <<'PY'
-          import os, ssl, sys
+          import os, ssl
           from ftplib import FTP_TLS, error_perm
           from pathlib import Path
 
-          host = os.environ["FTP_SERVER"].strip()
-          user = os.environ["FTP_USERNAME"].strip()
-          password = os.environ["FTP_PASSWORD"]  # no strip medio: solo bordes
-          password = password.strip("\r\n")
+          host = os.environ["FTP_SERVER"].strip().removeprefix("ftp://").removeprefix("ftps://").split("/")[0]
+          primary = os.environ["FTP_USERNAME"].strip()
+          password = os.environ["FTP_PASSWORD"].strip("\r\n")
           remote_root = (os.environ.get("FTP_SERVER_DIR") or "/public_html/").strip()
           if not remote_root.endswith("/"):
               remote_root += "/"
           local_root = Path("dist")
 
-          print(f"FTP host={host} user={user} dir={remote_root} pass_len={len(password)}")
+          # Probar usuario del secreto + variantes típicas Ferozo
+          candidates = []
+          for u in (
+              primary,
+              f"ftp@{host}" if "@" not in primary else primary.split("@")[0],
+              primary.split("@")[0] if "@" in primary else f"ftp@{host}",
+          ):
+              if u and u not in candidates:
+                  candidates.append(u)
+
+          print(f"FTP host={host} dir={remote_root} pass_len={len(password)}")
+          print("Usuarios a probar:", ", ".join(candidates))
 
           ctx = ssl.create_default_context()
           ctx.check_hostname = False
           ctx.verify_mode = ssl.CERT_NONE
 
-          ftp = FTP_TLS(context=ctx, timeout=60)
-          ftp.connect(host, 21)
-          ftp.auth()          # AUTH TLS en canal de control ANTES del login
-          ftp.login(user, password)
-          ftp.prot_p()        # datos también cifrados
-          ftp.set_pasv(True)
-          print("Login OK:", ftp.getwelcome())
+          ftp = None
+          last_err = None
+          for user in candidates:
+              for port in (21, 990):
+                  try:
+                      print(f"… intento user={user} port={port}")
+                      client = FTP_TLS(context=ctx, timeout=45)
+                      client.connect(host, port)
+                      # En 990 el TLS ya es implícito; auth() puede fallar → ignorar
+                      try:
+                          client.auth()
+                      except Exception as auth_err:
+                          if port == 21:
+                              raise
+                          print(f"  auth() omitido en {port}: {auth_err}")
+                      client.login(user, password)
+                      try:
+                          client.prot_p()
+                      except Exception:
+                          pass
+                      client.set_pasv(True)
+                      ftp = client
+                      print(f"Login OK con user={user} port={port} pwd={client.pwd()}")
+                      break
+                  except Exception as e:
+                      last_err = e
+                      print(f"  FAIL: {e}")
+                      try:
+                          client.close()
+                      except Exception:
+                          pass
+              if ftp is not None:
+                  break
+
+          if ftp is None:
+              raise SystemExit(f"No se pudo login FTP. Último error: {last_err}")
 
           def ensure_dir(path: str):
               parts = [p for p in path.strip("/").split("/") if p]
@@ -104,14 +142,11 @@ jobs:
 
           uploaded = 0
           for path in local_root.rglob("*"):
-              if not path.is_file():
-                  continue
-              if path.name == "stats.html":
+              if not path.is_file() or path.name == "stats.html":
                   continue
               rel = path.relative_to(local_root).as_posix()
               remote = remote_root + rel
-              parent_dir = remote.rsplit("/", 1)[0]
-              ensure_dir(remote_dir)
+              ensure_dir(remote.rsplit("/", 1)[0])
               with path.open("rb") as fh:
                   ftp.storbinary(f"STOR {remote}", fh)
               uploaded += 1
