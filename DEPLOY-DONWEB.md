@@ -14,7 +14,7 @@ GitHub → **Settings → Secrets and variables → Actions → New repository s
 | `FTP_USERNAME` | Usuario FTP |
 | `FTP_PASSWORD` | Contraseña FTP |
 | `FTP_SERVER_DIR` | `/public_html/` |
-| `VITE_API_URL` | `https://fiestas-religiosas-preview.vercel.app/api/v1` |
+| `VITE_API_URL` | `https://api-preview.fiestasreligiosas.com/api/v1` |
 | `VITE_CLOUDINARY_CLOUD_NAME` | `duuwqmpmn` |
 
 ## Probar

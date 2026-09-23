@@ -5,7 +5,7 @@
 #   FTP_USERNAME     c2662154  (también prueba ftp@c2662154.ferozo.com)
 #   FTP_PASSWORD     la de Ferozo / FTP
 #   FTP_SERVER_DIR   /public_html/
-#   VITE_API_URL
+#   VITE_API_URL     https://api-preview.fiestasreligiosas.com/api/v1
 #   VITE_CLOUDINARY_CLOUD_NAME  (opcional)
 
 name: Deploy DonWeb

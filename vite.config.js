@@ -32,7 +32,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "https://fiestas-religiosas-preview.vercel.app",
+        target: "https://api-preview.fiestasreligiosas.com",
         changeOrigin: true,
         secure: true,
         cookieDomainRewrite: "",
