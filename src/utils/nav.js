@@ -62,12 +62,6 @@ export const NAV_LIBRO = [
     kicker: "978-631-01-7027-5",
     resumen: "Tapa, contratapa y datos de la edición.",
   },
-  {
-    to: "/redes",
-    label: "Redes",
-    kicker: "Instagram y Facebook",
-    resumen: "Cuentas oficiales para seguir el proyecto.",
-  },
 ];
 
 export const NAV_TODAS = [...NAV_PRINCIPAL, ...NAV_LIBRO];

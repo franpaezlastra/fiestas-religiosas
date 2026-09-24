@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { fetchPublicPeople } from "../../redux/slices/peopleSlice";
 import { selectSantosForUi } from "../../utils/peopleAdapter";
@@ -82,13 +81,6 @@ export function SeccionSantos() {
           reconociendo el milagro por la curación inexplicable de un niño de 5 años), 8 venerables
           siervos de Dios, 43 siervos de Dios y 14 causas de inicio.
         </p>
-
-        <div className="mt-12">
-          <Pendiente titulo="Pendiente — CV de Alfredo Sabat">
-            El CV de Alfredo Sabat no está en el libro. Hay que pedírselo al cliente (es caricaturista
-            y colaborador histórico de Clarín).
-          </Pendiente>
-        </div>
       </div>
     </section>
   );

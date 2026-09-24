@@ -4,7 +4,7 @@ import { SeccionCreditos, SeccionTapa } from "../features/libro/SeccionCreditos"
 import { SeccionEscritores } from "../features/escritores/SeccionEscritores";
 import { SeccionGaleria } from "../features/galeria/SeccionGaleria";
 import { SeccionSantos } from "../features/santos/SeccionSantos";
-import { SeccionRedes, SeccionVideo } from "../features/pendientes/SeccionesPendientes";
+import { SeccionVideo } from "../features/pendientes/SeccionesPendientes";
 
 export function PaginaFrancisco() {
   return <SeccionBergoglio />;
@@ -40,8 +40,4 @@ export function PaginaCreditos() {
 
 export function PaginaTapa() {
   return <SeccionTapa />;
-}
-
-export function PaginaRedes() {
-  return <SeccionRedes />;
 }

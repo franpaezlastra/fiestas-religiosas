@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ARGENTINOS_FAMOSOS } from "../../data/argentinos";
 import { LineaTiempo } from "../../components/timeline/LineaTiempo";
-import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { fetchPublicFeatured } from "../../redux/slices/peopleSlice";
 import { fetchPublicTimelines } from "../../redux/slices/timelinesSlice";
@@ -199,14 +198,6 @@ export function SeccionBergoglio() {
           </ul>
         </div>
       </section>
-
-      <div className="mx-auto max-w-6xl px-4 py-12 md:py-20">
-        <Pendiente titulo="Pendiente — texto adicional">
-          El libro no trae un capítulo biográfico en prosa de Bergoglio: el homenaje es visual. Falta
-          confirmar si se redacta una historia de Bergoglio en Argentina aparte o si el cliente provee
-          ese texto.
-        </Pendiente>
-      </div>
     </section>
   );
 }

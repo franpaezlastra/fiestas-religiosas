@@ -283,11 +283,41 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
     const ids = idsDe(fiestaActiva);
     const f = FIESTAS.find((x) => ids.includes(x.id) && x.lat != null && x.lng != null);
     if (!f || !map?.flyTo) return;
+
+    const currentZoom = typeof map.getZoom === "function" ? map.getZoom() : 3;
+    // Si ya hay zoom, lo conservamos; si está lejos (país entero), acercamos al pin
+    const targetZoom = Math.max(currentZoom, 6.4);
+    const center = typeof map.getCenter === "function" ? map.getCenter() : null;
+    const dLng = center ? Math.abs(center.lng - f.lng) : 20;
+    const dLat = center ? Math.abs(center.lat - f.lat) : 20;
+    const distancia = Math.hypot(dLng, dLat);
+
+    // Casi encima del pin: pan suave. Más lejos: vuelo con arco (zoom out → pan → zoom in)
+    if (distancia < 0.12 && Math.abs(currentZoom - targetZoom) < 0.35) {
+      map.easeTo?.({
+        center: [f.lng, f.lat],
+        zoom: targetZoom,
+        padding: { top: 200, bottom: 80, left: 48, right: 48 },
+        duration: 550,
+        essential: true,
+      }) ??
+        map.flyTo({
+          center: [f.lng, f.lat],
+          zoom: targetZoom,
+          duration: 550,
+        });
+      return;
+    }
+
+    // Sin `duration` fijo: MapLibre calcula el viaje según distancia (curve/speed)
     map.flyTo({
       center: [f.lng, f.lat],
-      zoom: Math.max(typeof map.getZoom === "function" ? map.getZoom() : 6.2, 6.2),
+      zoom: targetZoom,
       padding: { top: 200, bottom: 80, left: 48, right: 48 },
-      duration: 900,
+      essential: true,
+      curve: 1.7,
+      speed: 0.8,
+      maxDuration: 4200,
     });
   }, [FIESTAS, fiestaActiva]);
 

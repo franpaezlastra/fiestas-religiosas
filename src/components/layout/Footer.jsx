@@ -12,12 +12,47 @@ const PLATFORM_LABEL = {
   WHATSAPP: "WhatsApp",
 };
 
-function IconInstagram({ className }) {
+/** Colores oficiales de cada plataforma */
+const PLATFORM_STYLE = {
+  INSTAGRAM: {
+    color: "#E1306C",
+    border: "rgba(225, 48, 108, 0.55)",
+    hoverBg: "rgba(225, 48, 108, 0.18)",
+  },
+  FACEBOOK: {
+    color: "#1877F2",
+    border: "rgba(24, 119, 242, 0.55)",
+    hoverBg: "rgba(24, 119, 242, 0.18)",
+  },
+  YOUTUBE: {
+    color: "#FF0000",
+    border: "rgba(255, 0, 0, 0.5)",
+    hoverBg: "rgba(255, 0, 0, 0.16)",
+  },
+  WHATSAPP: {
+    color: "#25D366",
+    border: "rgba(37, 211, 102, 0.55)",
+    hoverBg: "rgba(37, 211, 102, 0.16)",
+  },
+};
+
+function IconInstagram({ className, gradientId }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4Z" />
-      <path d="M17.5 6.3a1.2 1.2 0 1 1-2.4 0 1.2 1.2 0 0 1 2.4 0Z" />
-      <path d="M12 2.5c-2.6 0-2.9 0-3.9.1-2.6.1-4 1.5-4.1 4.1-.1 1-.1 1.3-.1 3.9s0 2.9.1 3.9c.1 2.6 1.5 4 4.1 4.1 1 .1 1.3.1 3.9.1s2.9 0 3.9-.1c2.6-.1 4-1.5 4.1-4.1.1-1 .1-1.3.1-3.9s0-2.9-.1-3.9c-.1-2.6-1.5-4-4.1-4.1-1-.1-1.3-.1-3.9-.1Zm0 1.8c2.5 0 2.8 0 3.8.1 1.8.1 2.7.9 2.8 2.8.1 1 .1 1.2.1 3.7s0 2.8-.1 3.8c-.1 1.8-.9 2.7-2.8 2.8-1 .1-1.2.1-3.8.1s-2.8 0-3.8-.1c-1.8-.1-2.7-.9-2.8-2.8-.1-1-.1-1.2-.1-3.8s0-2.8.1-3.8c.1-1.8 1-2.7 2.8-2.8 1-.1 1.3-.1 3.8-.1Z" />
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <defs>
+        <radialGradient id={gradientId} cx="30%" cy="107%" r="150%">
+          <stop offset="0%" stopColor="#fdf497" />
+          <stop offset="5%" stopColor="#fdf497" />
+          <stop offset="45%" stopColor="#fd5949" />
+          <stop offset="60%" stopColor="#d6249f" />
+          <stop offset="90%" stopColor="#285AEB" />
+        </radialGradient>
+      </defs>
+      <g fill={`url(#${gradientId})`}>
+        <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4Z" />
+        <path d="M17.5 6.3a1.2 1.2 0 1 1-2.4 0 1.2 1.2 0 0 1 2.4 0Z" />
+        <path d="M12 2.5c-2.6 0-2.9 0-3.9.1-2.6.1-4 1.5-4.1 4.1-.1 1-.1 1.3-.1 3.9s0 2.9.1 3.9c.1 2.6 1.5 4 4.1 4.1 1 .1 1.3.1 3.9.1s2.9 0 3.9-.1c2.6-.1 4-1.5 4.1-4.1.1-1 .1-1.3.1-3.9s0-2.9-.1-3.9c-.1-2.6-1.5-4-4.1-4.1-1-.1-1.3-.1-3.9-.1Zm0 1.8c2.5 0 2.8 0 3.8.1 1.8.1 2.7.9 2.8 2.8.1 1 .1 1.2.1 3.7s0 2.8-.1 3.8c-.1 1.8-.9 2.7-2.8 2.8-1 .1-1.2.1-3.8.1s-2.8 0-3.8-.1c-1.8-.1-2.7-.9-2.8-2.8-.1-1-.1-1.2-.1-3.8s0-2.8.1-3.8c.1-1.8 1-2.7 2.8-2.8 1-.1 1.3-.1 3.8-.1Z" />
+      </g>
     </svg>
   );
 }
@@ -57,7 +92,10 @@ function SocialIconLink({ platform, url }) {
   const key = String(platform || "").toUpperCase();
   const label = PLATFORM_LABEL[key] || key;
   const Icon = ICONS[key];
+  const brand = PLATFORM_STYLE[key];
   if (!Icon || !url) return null;
+
+  const gradientId = `ig-grad-${key}-${String(url).slice(-8).replace(/\W/g, "")}`;
 
   return (
     <a
@@ -65,9 +103,15 @@ function SocialIconLink({ platform, url }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blanco/25 text-celeste-cielo transition duration-200 hover:scale-105 hover:border-celeste-cielo hover:bg-blanco/10 hover:text-blanco focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-celeste-cielo"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border transition duration-200 hover:scale-105 hover:[background-color:var(--social-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{
+        color: brand?.color || "#7ec8e3",
+        borderColor: brand?.border || "rgba(255,255,255,0.25)",
+        outlineColor: brand?.color || "#7ec8e3",
+        "--social-hover-bg": brand?.hoverBg || "rgba(255,255,255,0.1)",
+      }}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-5 w-5" gradientId={gradientId} />
     </a>
   );
 }

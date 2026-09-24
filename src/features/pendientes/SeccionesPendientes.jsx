@@ -1,9 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "@reduxjs/toolkit";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
-import { fetchPublicSocial } from "../../redux/slices/socialSlice";
 import { fetchPublicVideos } from "../../redux/slices/videosSlice";
 
 const selectPublishedVideos = createSelector(
@@ -59,52 +58,6 @@ export function SeccionVideo() {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-export function SeccionRedes() {
-  const dispatch = useDispatch();
-  const links = useSelector((state) => state.social.publicItems);
-
-  useEffect(() => {
-    dispatch(fetchPublicSocial());
-  }, [dispatch]);
-
-  return (
-    <section>
-      <Portadilla id="redes" titulo="Redes" kicker="Instagram and Facebook" />
-      <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
-        {links.length === 0 ? (
-          <>
-            <Pendiente titulo="Pendiente — cuentas">
-              Todavía no hay redes cargadas. Agregalas desde el panel admin.
-            </Pendiente>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <span className="border border-dashed border-azul-logo/50 px-4 py-3 text-azul-logo">
-                Instagram
-              </span>
-              <span className="border border-dashed border-azul-logo/50 px-4 py-3 text-azul-logo">
-                Facebook
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-            {links.map((link) => (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                className="border border-azul-petroleo px-4 py-3 text-azul-petroleo transition hover:bg-azul-petroleo hover:text-blanco"
-              >
-                {link.platform}
-              </a>
-            ))}
           </div>
         )}
       </div>

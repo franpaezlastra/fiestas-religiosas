@@ -62,11 +62,6 @@ const PaginaCreditos = lazyPage(() =>
 const PaginaTapa = lazyPage(() =>
   import("./features/libro/SeccionCreditos").then((m) => ({ default: m.SeccionTapa })),
 );
-const PaginaRedes = lazyPage(() =>
-  import("./features/pendientes/SeccionesPendientes").then((m) => ({
-    default: m.SeccionRedes,
-  })),
-);
 
 /* Admin: chunk aparte; el QR público nunca lo baja */
 const AdminLoginPage = lazyPage(() =>
@@ -135,7 +130,6 @@ export default function App() {
           <Route path="video" element={<PaginaVideo />} />
           <Route path="creditos" element={<PaginaCreditos />} />
           <Route path="el-libro" element={<PaginaTapa />} />
-          <Route path="redes" element={<PaginaRedes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
