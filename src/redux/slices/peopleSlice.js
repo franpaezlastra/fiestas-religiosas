@@ -3,38 +3,20 @@ import { peopleService } from "../../services";
 import { shouldFetchPublic } from "../stale";
 
 /**
- * Preferí /public/people/holiness (solo santidad).
- * Si viene vacío o falla, cae a /public/people.
- * Los isFeatured (Maradona/Messi/…) se excluyen acá — van a /people/featured.
+ * GET /public/people/holiness — único endpoint para /santos.
+ * Requiere canonizationStage en cada persona (Stefan).
+ * Destacados culturales van a /people/featured, no acá.
  */
 export const fetchPublicPeople = createAsyncThunk(
   "people/fetchPublic",
   async (params = {}, { rejectWithValue }) => {
     try {
-      let fromHoliness = false;
-      let data = [];
-      try {
-        const holiness = await peopleService.publicHoliness(params);
-        if (Array.isArray(holiness) && holiness.length > 0) {
-          data = holiness;
-          fromHoliness = true;
-        }
-      } catch {
-        // endpoint viejo / 404 → listado general
-      }
-      if (data.length === 0) {
-        const list = await peopleService.publicList(params);
-        data = Array.isArray(list) ? list : [];
-      }
-      // Nunca mezclar destacados culturales en el slice de santos
-      data = data.filter((p) => {
-        if (p?.canonizationStage) return true;
-        const roles = (p?.roles || []).map((r) => r.role);
-        if (roles.some((r) => ["SAINT", "BLESSED"].includes(r))) return true;
-        if (p?.isFeatured) return false;
-        return true;
+      const holiness = await peopleService.publicHoliness(params);
+      const data = (Array.isArray(holiness) ? holiness : []).filter((p) => {
+        if (p?.isFeatured && !p?.canonizationStage) return false;
+        return Boolean(p?.canonizationStage);
       });
-      return { items: data, fromHoliness };
+      return { items: data, fromHoliness: true };
     } catch (error) {
       return rejectWithValue({ message: error.message });
     }

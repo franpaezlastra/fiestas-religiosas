@@ -14,10 +14,13 @@ GitHub → **Settings → Secrets and variables → Actions → New repository s
 | `FTP_USERNAME` | Usuario FTP |
 | `FTP_PASSWORD` | Contraseña FTP |
 | `FTP_SERVER_DIR` | `/public_html/` |
-| `VITE_API_URL` | `https://api.fiestasreligiosas.com/api/v1` (prod DonWeb) |
+| `VITE_API_URL` | `https://api.fiestasreligiosas.com/api/v1` (dominio principal) |
+| `VITE_API_URL_PREVIEW` | `https://api-preview.fiestasreligiosas.com/api/v1` (subdominio `preview.`) |
+| `VITE_CLOUDINARY_CLOUD_NAME` | `duuwqmpmn` |
 
 Local (`npm run dev`) usa el proxy → `api-preview.fiestasreligiosas.com`.
-| `VITE_CLOUDINARY_CLOUD_NAME` | `duuwqmpmn` |
+
+`preview.fiestasreligiosas.com` y `fiestasreligiosas.com` comparten el mismo `dist/` en DonWeb: el front elige el API según el hostname (`apiClient.js`).
 
 ## Probar
 

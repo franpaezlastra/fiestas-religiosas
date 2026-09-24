@@ -1,4 +1,21 @@
-const API_URL = import.meta.env.VITE_API_URL || "/api/v1";
+/**
+ * API por entorno:
+ * - localhost → VITE_API_URL (proxy Vite → api-preview)
+ * - preview.fiestasreligiosas.com → api-preview (mismo build DonWeb que prod)
+ * - fiestasreligiosas.com → VITE_API_URL de producción
+ */
+const ENV_API_URL = import.meta.env.VITE_API_URL || "/api/v1";
+const PREVIEW_API_URL =
+  import.meta.env.VITE_API_URL_PREVIEW || "https://api-preview.fiestasreligiosas.com/api/v1";
+
+function resolveApiUrl() {
+  if (typeof window === "undefined") return ENV_API_URL;
+  const host = window.location.hostname;
+  if (host === "preview.fiestasreligiosas.com") return PREVIEW_API_URL;
+  return ENV_API_URL;
+}
+
+const API_URL = resolveApiUrl();
 
 export class ApiError extends Error {
   constructor(error, status) {
