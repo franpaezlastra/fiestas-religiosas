@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fiestaNumero } from "../../utils/celebrationsAdapter";
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
+import { SectionLoader } from "../ui/SectionLoader";
+import { isPublicLoading } from "../../utils/preload";
 
 const MESES = [
   { n: 1, nombre: "Enero" },
@@ -26,6 +28,8 @@ function idsDe(activa) {
 export function Calendario({ fiestaActiva, onActiva }) {
   const dispatch = useDispatch();
   const FIESTAS = useSelector(selectFiestasUi);
+  const status = useSelector((s) => s.celebrations.status);
+  const cargando = isPublicLoading(status);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
@@ -55,6 +59,14 @@ export function Calendario({ fiestaActiva, onActiva }) {
           Vista mes a mes, como en la página 30 del libro. Tocá una fiesta para resaltarla en el
           mapa.
         </p>
+
+        {cargando ? (
+          <SectionLoader
+            compact
+            texto="Actualizando calendario…"
+            hint="Sincronizando fechas con el servidor."
+          />
+        ) : null}
 
         <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
           {MESES.map((m) => {

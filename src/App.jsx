@@ -1,22 +1,14 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
+import { PageLoader } from "./components/ui/SectionLoader";
 import { Inicio } from "./pages/Inicio";
-
-/** Fallback mínimo — sin spinners pesados (QR / 3G). */
-function PageFallback() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center bg-papel text-sm text-azul-petroleo">
-      Cargando…
-    </div>
-  );
-}
 
 function lazyPage(factory) {
   const Comp = lazy(factory);
   return function LazyRoute(props) {
     return (
-      <Suspense fallback={<PageFallback />}>
+      <Suspense fallback={<PageLoader texto="Cargando página…" />}>
         <Comp {...props} />
       </Suspense>
     );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SoftImage } from "../ui/SoftImage";
 
 /** Línea vertical bajo el eje sticky: ahí se decide el año activo. */
 const FOCO_Y_RATIO = 0.32;
@@ -128,12 +129,11 @@ export function LineaTiempo({ id, variante, hitos, ejeAnios }) {
             <span className="linea-nodo" aria-hidden />
             <article className={`linea-ficha${h.foto ? " has-foto" : ""}`}>
               {h.foto ? (
-                <img
+                <SoftImage
                   src={h.foto}
                   alt={h.fotoAlt ?? ""}
-                  loading="lazy"
-                  decoding="async"
-                  className={`linea-foto${h.fotoForma === "logo" ? " is-logo" : ""}`}
+                  className={`linea-foto-wrap${h.fotoForma === "logo" ? " is-logo" : ""}`}
+                  imgClassName={`linea-foto${h.fotoForma === "logo" ? " is-logo" : ""}`}
                 />
               ) : null}
               <div className="linea-ficha-cuerpo">

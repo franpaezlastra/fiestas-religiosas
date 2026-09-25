@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { NAV_LIBRO, NAV_PRINCIPAL } from "../../utils/nav";
 import { Logo } from "../../components/ui/Logo";
 import { fetchPublicSocial } from "../../redux/slices/socialSlice";
+import { isPublicLoading } from "../../utils/preload";
 
 const PLATFORM_LABEL = {
   INSTAGRAM: "Instagram",
@@ -119,6 +120,8 @@ function SocialIconLink({ platform, url }) {
 export function Footer() {
   const dispatch = useDispatch();
   const links = useSelector((state) => state.social.publicItems);
+  const status = useSelector((state) => state.social.status);
+  const cargando = isPublicLoading(status);
 
   useEffect(() => {
     dispatch(fetchPublicSocial());
@@ -139,7 +142,16 @@ export function Footer() {
           <p className="mt-3 text-sm font-light">Peregrinos. 80 fiestas populares argentinas</p>
           <p className="mt-2 text-sm">Federico Lanati · 2026</p>
           <p className="mt-1 text-sm">ISBN 978-631-01-7027-5</p>
-          {sortedLinks.length > 0 ? (
+          {cargando ? (
+            <div className="mt-5 flex gap-3" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="inline-flex h-10 w-10 animate-pulse rounded-full border border-blanco/20 bg-blanco/10"
+                />
+              ))}
+            </div>
+          ) : sortedLinks.length > 0 ? (
             <nav className="mt-5 flex flex-wrap gap-3" aria-label="Redes sociales">
               {sortedLinks.map((link) => (
                 <SocialIconLink

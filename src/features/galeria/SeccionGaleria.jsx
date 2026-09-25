@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { GaleriaModal } from "../../components/gallery/GaleriaModal";
 import { ProtectedImage } from "../../components/gallery/ProtectedImage";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { SectionLoader } from "../../components/ui/SectionLoader";
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { celebrationsService } from "../../services";
 import {
@@ -19,16 +20,25 @@ import {
   provinciasDe,
 } from "../../utils/fiestaFiltros";
 import { fotoPortada, tieneFotosApi } from "../../utils/galeria";
+import { isPublicLoading, preloadUrls } from "../../utils/preload";
 
 function useFiestas() {
   const dispatch = useDispatch();
   const FIESTAS = useSelector(selectFiestasUi);
+  const status = useSelector((s) => s.celebrations.status);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
   }, [dispatch]);
 
-  return FIESTAS;
+  return { FIESTAS, status };
+}
+
+/** Homenaje al papa: vive en /francisco, no en la galería de fiestas. */
+function esHomenajePapa(f) {
+  if (!f) return false;
+  if (f.capitulo === "homenaje") return true;
+  return /fallecimiento\s+papa\s+francisco/i.test(String(f.nombre || ""));
 }
 
 function leerFiltros(params) {
@@ -50,7 +60,7 @@ function paramsIguales(a, b) {
 }
 
 export function SeccionGaleria() {
-  const FIESTAS = useFiestas();
+  const { FIESTAS, status } = useFiestas();
   const [searchParams, setSearchParams] = useSearchParams();
   const inicial = leerFiltros(searchParams);
 
@@ -64,10 +74,14 @@ export function SeccionGaleria() {
   const [errorAlbum, setErrorAlbum] = useState(null);
   const [lightbox, setLightbox] = useState(null);
   const [rotas, setRotas] = useState(() => new Set());
+  const [indiceListo, setIndiceListo] = useState(false);
 
-  // Solo fiestas con portada real del API (sin huecos vacíos)
+  // Solo fiestas con portada real del API (sin homenaje al papa ni huecos vacíos)
   const conMedia = useMemo(
-    () => FIESTAS.filter((f) => tieneFotosApi(f) && Boolean(fotoPortada(f))),
+    () =>
+      FIESTAS.filter(
+        (f) => !esHomenajePapa(f) && tieneFotosApi(f) && Boolean(fotoPortada(f)),
+      ),
     [FIESTAS],
   );
 
@@ -90,6 +104,32 @@ export function SeccionGaleria() {
     () => FIESTAS.find((f) => f.id === activaId) || null,
     [FIESTAS, activaId],
   );
+
+  const cargandoFiestas = isPublicLoading(status);
+
+  // Índice: no mostrar la grilla hasta que bajen TODAS las portadas
+  useEffect(() => {
+    if (activaId) return undefined;
+    if (cargandoFiestas) {
+      setIndiceListo(false);
+      return undefined;
+    }
+    if (filtradas.length === 0) {
+      setIndiceListo(true);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setIndiceListo(false);
+    const urls = filtradas.map((f) => fotoPortada(f));
+    preloadUrls(urls).then(() => {
+      if (!cancelled) setIndiceListo(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filtradas, activaId, cargandoFiestas]);
 
   useEffect(() => {
     const next = new URLSearchParams();
@@ -115,7 +155,7 @@ export function SeccionGaleria() {
     const match = FIESTAS.find(
       (f) => String(f.id) === param || String(fiestaNumero(f)) === param || f.apiId === param,
     );
-    if (match && tieneFotosApi(match)) setActivaId(match.id);
+    if (match && tieneFotosApi(match) && !esHomenajePapa(match)) setActivaId(match.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [FIESTAS]);
 
@@ -142,13 +182,18 @@ export function SeccionGaleria() {
 
     celebrationsService
       .publicImages(celebrationId)
-      .then((rows) => {
+      .then(async (rows) => {
         if (cancelled) return;
         const list = Array.isArray(rows) ? rows : [];
         const urls = celebrationImageUrls({ images: list }, { maxWidth: 1200 });
         setFotosAlbum(urls);
         setCargandoAlbum(false);
-        if (urls.length === 0) setAlbumListo(true);
+        if (urls.length === 0) {
+          setAlbumListo(true);
+          return;
+        }
+        await preloadUrls(urls);
+        if (!cancelled) setAlbumListo(true);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -164,42 +209,10 @@ export function SeccionGaleria() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activaId]);
 
-  // Esperar a que bajen las imágenes antes de sacar el loader (evita el tramo vacío)
-  useEffect(() => {
-    if (cargandoAlbum || fotosAlbum.length === 0) return undefined;
-
-    let pending = fotosAlbum.length;
-    let cancelled = false;
-    setAlbumListo(false);
-
-    function done() {
-      pending -= 1;
-      if (!cancelled && pending <= 0) setAlbumListo(true);
-    }
-
-    const loaders = fotosAlbum.map((url) => {
-      const img = new Image();
-      img.onload = done;
-      img.onerror = done;
-      img.src = url;
-      return img;
-    });
-
-    const failsafe = setTimeout(() => {
-      if (!cancelled) setAlbumListo(true);
-    }, 10000);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(failsafe);
-      loaders.forEach((img) => {
-        img.onload = null;
-        img.onerror = null;
-      });
-    };
-  }, [fotosAlbum, cargandoAlbum]);
-
-  const mostrandoLoader = Boolean(activaId) && (cargandoAlbum || (fotosAlbum.length > 0 && !albumListo));
+  const mostrandoIndiceLoader =
+    !activaId && (cargandoFiestas || (filtradas.length > 0 && !indiceListo));
+  const mostrandoAlbumLoader =
+    Boolean(activaId) && (cargandoAlbum || (fotosAlbum.length > 0 && !albumListo));
 
   function elegirFiesta(f) {
     setActivaId(f.id);
@@ -297,68 +310,84 @@ export function SeccionGaleria() {
                 </div>
               </div>
               <p className="mt-3 text-sm text-azul-logo">
-                {filtradas.length} fiesta{filtradas.length === 1 ? "" : "s"}
-                {hayFiltros ? " con estos filtros" : ""}
-                {provincia !== "todas" ? ` · ${labelProvincia(provincia)}` : ""}
-                {mes !== "todos" ? ` · ${MES_NOMBRE[Number(mes)] || mes}` : ""}
+                {mostrandoIndiceLoader
+                  ? "Cargando portadas…"
+                  : `${filtradas.length} fiesta${filtradas.length === 1 ? "" : "s"}`}
+                {!mostrandoIndiceLoader && hayFiltros ? " con estos filtros" : ""}
+                {!mostrandoIndiceLoader && provincia !== "todas"
+                  ? ` · ${labelProvincia(provincia)}`
+                  : ""}
+                {!mostrandoIndiceLoader && mes !== "todos"
+                  ? ` · ${MES_NOMBRE[Number(mes)] || mes}`
+                  : ""}
               </p>
             </div>
 
-            <ul className="galeria-indice mt-6">
-              {filtradas.map((f) => {
-                const portada = fotoPortada(f);
-                if (!portada) return null;
-                return (
-                  <li key={f.id}>
-                    <button
-                      type="button"
-                      className="galeria-indice-card group w-full text-left"
-                      onClick={() => elegirFiesta(f)}
-                    >
-                      <span className="galeria-indice-thumb">
-                        <ProtectedImage
-                          src={portada}
-                          alt=""
-                          fit="natural"
-                          onError={() => marcarRota(f.id)}
-                        />
-                        <span className="galeria-indice-hover">
-                          <span>Ver galería de {f.nombre}</span>
-                        </span>
-                      </span>
-                      <span className="block px-1 pt-2.5">
-                        <span className="font-display text-base text-azul-petroleo transition-colors group-hover:text-celeste-cielo">
-                          <span className="mr-1.5 font-body text-xs tabular-nums opacity-70">
-                            {String(fiestaNumero(f)).padStart(2, "0")}
+            {mostrandoIndiceLoader ? (
+              <SectionLoader
+                texto="Cargando galería…"
+                hint="Esperamos a que bajen todas las portadas."
+              />
+            ) : (
+              <>
+                <ul className="galeria-indice mt-6">
+                  {filtradas.map((f) => {
+                    const portada = fotoPortada(f);
+                    if (!portada) return null;
+                    return (
+                      <li key={f.id}>
+                        <button
+                          type="button"
+                          className="galeria-indice-card group w-full text-left"
+                          onClick={() => elegirFiesta(f)}
+                        >
+                          <span className="galeria-indice-thumb">
+                            <ProtectedImage
+                              src={portada}
+                              alt=""
+                              fit="natural"
+                              eager
+                              onError={() => marcarRota(f.id)}
+                            />
+                            <span className="galeria-indice-hover">
+                              <span>Ver galería de {f.nombre}</span>
+                            </span>
                           </span>
-                          {f.nombre}
-                        </span>
-                        <span className="mt-0.5 block text-xs font-light">
-                          {f.lugar}
-                          {f.provincia && f.lugar !== f.provincia ? `, ${f.provincia}` : ""}
-                          {f.fecha ? ` · ${f.fecha}` : ""}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                          <span className="block px-1 pt-2.5">
+                            <span className="font-display text-base text-azul-petroleo transition-colors group-hover:text-celeste-cielo">
+                              <span className="mr-1.5 font-body text-xs tabular-nums opacity-70">
+                                {String(fiestaNumero(f)).padStart(2, "0")}
+                              </span>
+                              {f.nombre}
+                            </span>
+                            <span className="mt-0.5 block text-xs font-light">
+                              {f.lugar}
+                              {f.provincia && f.lugar !== f.provincia ? `, ${f.provincia}` : ""}
+                              {f.fecha ? ` · ${f.fecha}` : ""}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
 
-            {filtradas.length === 0 ? (
-              <p className="mt-10 text-sm">
-                No hay fiestas con fotos para estos filtros.{" "}
-                {hayFiltros ? (
-                  <button
-                    type="button"
-                    className="text-celeste-cielo underline"
-                    onClick={limpiarFiltros}
-                  >
-                    Limpiar
-                  </button>
+                {filtradas.length === 0 ? (
+                  <p className="mt-10 text-sm">
+                    No hay fiestas con fotos para estos filtros.{" "}
+                    {hayFiltros ? (
+                      <button
+                        type="button"
+                        className="text-celeste-cielo underline"
+                        onClick={limpiarFiltros}
+                      >
+                        Limpiar
+                      </button>
+                    ) : null}
+                  </p>
                 ) : null}
-              </p>
-            ) : null}
+              </>
+            )}
           </>
         ) : (
           <div className="mt-8">
@@ -383,25 +412,24 @@ export function SeccionGaleria() {
                   ? `, ${activa.provincia}`
                   : ""}
                 {activa.fecha ? ` · ${activa.fecha}` : ""}
-                {!mostrandoLoader && !errorAlbum && fotosAlbum.length > 0
+                {!mostrandoAlbumLoader && !errorAlbum && fotosAlbum.length > 0
                   ? ` · ${fotosAlbum.length} foto${fotosAlbum.length === 1 ? "" : "s"}`
                   : null}
               </p>
             </header>
 
-            {mostrandoLoader ? (
-              <div className="galeria-loader" role="status" aria-live="polite">
-                <span className="galeria-loader-spin" aria-hidden />
-                <p className="galeria-loader-texto">Cargando fotos…</p>
-                <p className="galeria-loader-hint">Un momento, estamos trayendo la galería.</p>
-              </div>
+            {mostrandoAlbumLoader ? (
+              <SectionLoader
+                texto="Cargando fotos…"
+                hint="Un momento, estamos trayendo la galería."
+              />
             ) : null}
 
             {errorAlbum ? (
               <p className="mt-4 text-sm text-naranja-libro">{errorAlbum}</p>
             ) : null}
 
-            {!mostrandoLoader && !errorAlbum && fotosAlbum.length > 0 ? (
+            {!mostrandoAlbumLoader && !errorAlbum && fotosAlbum.length > 0 ? (
               <ul className="galeria-album mt-4">
                 {fotosAlbum.map((url, i) => (
                   <li key={`${url}-${i}`}>
@@ -411,14 +439,14 @@ export function SeccionGaleria() {
                       onClick={() => setLightbox(i)}
                       aria-label={`Ver foto ${i + 1}`}
                     >
-                      <ProtectedImage src={url} alt="" fit="natural" />
+                      <ProtectedImage src={url} alt="" fit="natural" eager />
                     </button>
                   </li>
                 ))}
               </ul>
             ) : null}
 
-            {!mostrandoLoader && !errorAlbum && fotosAlbum.length === 0 ? (
+            {!mostrandoAlbumLoader && !errorAlbum && fotosAlbum.length === 0 ? (
               <p className="mt-4 text-sm">Esta celebración aún no tiene fotos reales en la galería.</p>
             ) : null}
           </div>

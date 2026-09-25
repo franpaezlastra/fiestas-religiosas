@@ -588,6 +588,12 @@ select:focus-visible {
   text-align: center;
 }
 
+.galeria-loader.is-compact {
+  min-height: 5rem;
+  margin-top: 0.5rem;
+  padding: 0.85rem 0.75rem;
+}
+
 .galeria-loader-spin {
   width: 2.25rem;
   height: 2.25rem;
@@ -615,6 +621,35 @@ select:focus-visible {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Imágenes: placeholder hasta onLoad */
+.soft-image {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, #f7f3ec 80%, #415d82 8%);
+}
+
+.soft-image > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.soft-image.is-loaded > img {
+  opacity: 1;
+}
+
+.soft-image.is-avatar {
+  border-radius: 999px;
+}
+
+.soft-image.is-avatar > img {
+  height: 100%;
+  object-fit: cover;
 }
 
 .detalle-fiesta img {
@@ -789,6 +824,27 @@ select:focus-visible {
   max-width: 7.5rem;
   max-height: 9rem;
   object-fit: contain;
+}
+
+.linea-foto-wrap {
+  display: block;
+  flex: none;
+  max-width: 7.5rem;
+  background: color-mix(in srgb, #f7f3ec 80%, #415d82 8%);
+}
+
+.linea-foto-wrap > img {
+  max-width: 7.5rem;
+  max-height: 9rem;
+}
+
+.linea-foto-wrap.is-logo {
+  max-width: 3.75rem;
+}
+
+.linea-foto-wrap.is-logo > img {
+  max-width: 3.75rem;
+  max-height: 3.75rem;
 }
 
 .linea-foto.is-logo {

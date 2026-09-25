@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Boton } from "../../components/ui/Boton";
+import { preloadUrls } from "../../utils/preload";
 
 const SLIDES = [
   {
@@ -27,16 +28,29 @@ const INTERVAL_MS = 6000;
 export function SliderPrincipal() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [heroListo, setHeroListo] = useState(false);
 
   const go = useCallback((next) => {
     setIndex(((next % SLIDES.length) + SLIDES.length) % SLIDES.length);
   }, []);
 
   useEffect(() => {
-    if (paused) return undefined;
+    let cancelled = false;
+    preloadUrls([SLIDES[0].src]).then(() => {
+      if (!cancelled) setHeroListo(true);
+    });
+    // El resto en background
+    preloadUrls(SLIDES.slice(1).map((s) => s.src));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (paused || !heroListo) return undefined;
     const id = window.setInterval(() => go(index + 1), INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [index, paused, go]);
+  }, [index, paused, go, heroListo]);
 
   const slide = SLIDES[index];
 
@@ -47,13 +61,20 @@ export function SliderPrincipal() {
       onMouseLeave={() => setPaused(false)}
     >
       <div id="hero-inicio" className="relative min-h-[100svh] overflow-hidden">
+        {!heroListo ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-papel">
+            <span className="galeria-loader-spin" aria-hidden />
+            <p className="galeria-loader-texto text-base">Cargando…</p>
+          </div>
+        ) : null}
+
         {SLIDES.map((s, i) => (
           <img
             key={s.src}
             src={s.src}
             alt={s.alt}
             className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out ${
-              i === index ? "opacity-100" : "opacity-0"
+              heroListo && i === index ? "opacity-100" : "opacity-0"
             }`}
             loading={i === 0 ? "eager" : "lazy"}
           />

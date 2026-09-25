@@ -3,7 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "@reduxjs/toolkit";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { SectionLoader } from "../../components/ui/SectionLoader";
 import { fetchPublicVideos } from "../../redux/slices/videosSlice";
+import { isPublicLoading } from "../../utils/preload";
 
 const selectPublishedVideos = createSelector(
   [(s) => s.videos.publicItems],
@@ -16,6 +18,8 @@ const selectPublishedVideos = createSelector(
 export function SeccionVideo() {
   const dispatch = useDispatch();
   const published = useSelector(selectPublishedVideos);
+  const status = useSelector((s) => s.videos.status);
+  const loading = isPublicLoading(status);
 
   useEffect(() => {
     dispatch(fetchPublicVideos());
@@ -29,7 +33,12 @@ export function SeccionVideo() {
         kicker="Festival summary video"
       />
       <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
-        {published.length === 0 ? (
+        {loading ? (
+          <SectionLoader
+            texto="Cargando video…"
+            hint="Traemos los videos publicados desde el servidor."
+          />
+        ) : published.length === 0 ? (
           <>
             <Pendiente titulo="Pendiente — YouTube">
               Todavía no hay videos publicados en el backend. Cargalos desde el panel admin.

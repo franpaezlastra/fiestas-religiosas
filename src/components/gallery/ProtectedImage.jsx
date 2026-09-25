@@ -9,7 +9,9 @@ export function ProtectedImage({
   alt = "",
   className = "",
   fit = "cover",
+  eager = false,
   onError,
+  onLoad,
 }) {
   if (!src) return null;
 
@@ -34,12 +36,13 @@ export function ProtectedImage({
         src={src}
         alt=""
         draggable={false}
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
         decoding="async"
         className={fitClass}
         onContextMenu={block}
         onDragStart={block}
         onError={onError}
+        onLoad={onLoad}
       />
       <span className="protected-image-shield" aria-hidden />
     </span>

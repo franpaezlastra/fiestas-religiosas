@@ -2,8 +2,11 @@ import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Pendiente } from "../../components/ui/Pendiente";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { SectionLoader } from "../../components/ui/SectionLoader";
+import { SoftImage } from "../../components/ui/SoftImage";
 import { fetchPublicBooks } from "../../redux/slices/booksSlice";
 import { optimizeCloudinaryUrl } from "../../utils/celebrationsAdapter";
+import { isPublicLoading } from "../../utils/preload";
 
 function bookTitle(book) {
   return (
@@ -96,6 +99,8 @@ export function SeccionCreditos() {
 export function SeccionTapa() {
   const dispatch = useDispatch();
   const books = useSelector((s) => s.books.publicItems);
+  const publicStatus = useSelector((s) => s.books.publicStatus);
+  const loading = isPublicLoading(publicStatus);
   const book = useMemo(() => {
     const list = Array.isArray(books) ? books : [];
     return (
@@ -125,49 +130,62 @@ export function SeccionTapa() {
       />
 
       <div className="mx-auto max-w-3xl px-4 py-12 md:py-20">
-        <p className="font-light leading-relaxed">
-          {tr?.description ||
-            "ISBN 978-631-01-7027-5. La foto de tapa es la Virgen del Valle en Catamarca, cada 8 de diciembre."}
-        </p>
-        {book ? (
-          <p className="mt-4 text-sm font-light">
-            <span className="font-medium text-azul-petroleo">{bookTitle(book)}</span>
-            {book.isbn ? ` · ISBN ${book.isbn}` : null}
-            {book.publisher ? ` · ${book.publisher}` : null}
-            {book.pageCount ? ` · ${book.pageCount} pág.` : null}
-          </p>
-        ) : null}
-        <figure className="mt-10">
-          <div className="foto-libro mx-auto max-w-xl aspect-[3/4]">
-            <img
-              src={cover || "/images/tapa-tipografica.jpg"}
-              alt={
-                cover
-                  ? `Tapa de ${bookTitle(book)}`
-                  : "Página de título tipográfica del libro Peregrinos"
-              }
-            />
-          </div>
-          <figcaption className="mt-2 text-sm">
-            {cover
-              ? "Tapa del libro (API)."
-              : "Página de título del interior. La tapa ilustrada con la foto de la Virgen del Valle no forma parte de este PDF de interiores."}
-            <span className="caption-en block">
-              {cover
-                ? "Book cover from the API."
-                : "Interior title page. The photographic cover is not included in this interior PDF."}
-            </span>
-          </figcaption>
-        </figure>
-        {!book ? (
-          <div className="mt-8">
-            <Pendiente titulo="Pendiente — libro en el API">
-              Todavía no hay un libro publicado en /public/books. Cargalo desde el admin (ISBN
-              978-631-01-7027-5) o corré el seed.
-            </Pendiente>
-          </div>
-        ) : null}
+        {loading ? (
+          <SectionLoader
+            texto="Cargando el libro…"
+            hint="Buscamos la tapa y los datos de edición."
+          />
+        ) : (
+          <>
+            <p className="font-light leading-relaxed">
+              {tr?.description ||
+                "ISBN 978-631-01-7027-5. La foto de tapa es la Virgen del Valle en Catamarca, cada 8 de diciembre."}
+            </p>
+            {book ? (
+              <p className="mt-4 text-sm font-light">
+                <span className="font-medium text-azul-petroleo">{bookTitle(book)}</span>
+                {book.isbn ? ` · ISBN ${book.isbn}` : null}
+                {book.publisher ? ` · ${book.publisher}` : null}
+                {book.pageCount ? ` · ${book.pageCount} pág.` : null}
+              </p>
+            ) : null}
+            <figure className="mt-10">
+              <div className="foto-libro mx-auto max-w-xl aspect-[3/4]">
+                <SoftImage
+                  src={cover || "/images/tapa-tipografica.jpg"}
+                  alt={
+                    cover
+                      ? `Tapa de ${bookTitle(book)}`
+                      : "Página de título tipográfica del libro Peregrinos"
+                  }
+                  eager
+                  className="h-full w-full"
+                  imgClassName="h-full w-full object-cover"
+                />
+              </div>
+              <figcaption className="mt-2 text-sm">
+                {cover
+                  ? "Tapa del libro (API)."
+                  : "Página de título del interior. La tapa ilustrada con la foto de la Virgen del Valle no forma parte de este PDF de interiores."}
+                <span className="caption-en block">
+                  {cover
+                    ? "Book cover from the API."
+                    : "Interior title page. The photographic cover is not included in this interior PDF."}
+                </span>
+              </figcaption>
+            </figure>
+            {!book ? (
+              <div className="mt-8">
+                <Pendiente titulo="Pendiente — libro en el API">
+                  Todavía no hay un libro publicado en /public/books. Cargalo desde el admin (ISBN
+                  978-631-01-7027-5) o corré el seed.
+                </Pendiente>
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
     </section>
   );
 }
+

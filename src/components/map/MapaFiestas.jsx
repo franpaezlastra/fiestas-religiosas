@@ -17,6 +17,8 @@ import {
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { Boton } from "../../components/ui/Boton";
 import { ProtectedImage } from "../../components/gallery/ProtectedImage";
+import { SectionLoader } from "../../components/ui/SectionLoader";
+import { isPublicLoading } from "../../utils/preload";
 
 const ARG_MAX_BOUNDS = [
   [-88, -62],
@@ -35,12 +37,13 @@ function idsDe(activa) {
 function useFiestas() {
   const dispatch = useDispatch();
   const FIESTAS = useSelector(selectFiestasUi);
+  const status = useSelector((s) => s.celebrations.status);
 
   useEffect(() => {
     dispatch(fetchPublicCelebrations());
   }, [dispatch]);
 
-  return FIESTAS;
+  return { FIESTAS, status };
 }
 
 function Detalle({ fiestas, onPick }) {
@@ -183,7 +186,8 @@ function FloatCard({ fiesta, style, onEnter, onLeave }) {
 export function MapaFiestas({ fiestaActiva, onActiva }) {
   const mapRef = useRef(null);
   const wrapRef = useRef(null);
-  const FIESTAS = useFiestas();
+  const { FIESTAS, status } = useFiestas();
+  const cargando = isPublicLoading(status);
   const [provincia, setProvincia] = useState("todas");
   const [tipo, setTipo] = useState("todos");
   const [mes, setMes] = useState("todos");
@@ -385,6 +389,15 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
           libro; las 13 últimas son fiestas que el autor intentará visitar. Podés acercar, alejar y
           mover el mapa.
         </p>
+
+        {cargando ? (
+          <SectionLoader
+            compact
+            className="mb-4"
+            texto="Actualizando mapa…"
+            hint="Sincronizando celebraciones con el servidor."
+          />
+        ) : null}
 
         {nacionales.length > 0 ? (
           <div className="mt-6">

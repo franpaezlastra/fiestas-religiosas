@@ -3,10 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { ARGENTINOS_FAMOSOS } from "../../data/argentinos";
 import { LineaTiempo } from "../../components/timeline/LineaTiempo";
 import { Portadilla } from "../../components/ui/Portadilla";
+import { SectionLoader } from "../../components/ui/SectionLoader";
+import { SoftImage } from "../../components/ui/SoftImage";
 import { fetchPublicFeatured } from "../../redux/slices/peopleSlice";
 import { fetchPublicTimelines } from "../../redux/slices/timelinesSlice";
 import { selectFeaturedForUi } from "../../utils/peopleAdapter";
 import { selectFranciscoTimelines } from "../../utils/timelinesAdapter";
+import { isPublicLoading, preloadUrls } from "../../utils/preload";
 
 const FRASES_FRANCISCO = [
   "«Recen por mí».",
@@ -32,15 +35,31 @@ function irA(id) {
 export function SeccionBergoglio() {
   const dispatch = useDispatch();
   const [tramo, setTramo] = useState("argentina");
+  const [fotosListas, setFotosListas] = useState(false);
   const publicItems = useSelector((s) => s.timelines.publicItems);
+  const status = useSelector((s) => s.timelines.status);
   const { argentina, papado, aniosPapado } = useMemo(
     () => selectFranciscoTimelines(publicItems),
     [publicItems],
   );
 
+  const loading = isPublicLoading(status) || !fotosListas;
+
   useEffect(() => {
     dispatch(fetchPublicTimelines());
   }, [dispatch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFotosListas(false);
+    const urls = [...argentina, ...papado].map((h) => h.foto).filter(Boolean);
+    preloadUrls(urls).then(() => {
+      if (!cancelled) setFotosListas(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [argentina, papado]);
 
   useEffect(() => {
     function sync() {
@@ -90,6 +109,15 @@ export function SeccionBergoglio() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="mx-auto max-w-5xl px-4 pb-16">
+          <SectionLoader
+            texto="Cargando líneas de tiempo…"
+            hint="Preparando hitos e imágenes del papado."
+          />
+        </div>
+      ) : (
+        <>
       <div className="linea-tramos" role="navigation" aria-label="Tramo en pantalla">
         <div className="mx-auto flex w-full max-w-5xl px-4">
           <button
@@ -125,34 +153,14 @@ export function SeccionBergoglio() {
           kicker="Main actions of Pope Francis"
         />
 
-        <figure className="border-b border-azul-logo/10 bg-blanco">
-          <div className="mx-auto max-w-5xl px-4 pt-12 md:pt-16">
+        <div className="bg-papel">
+          <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
             <h3 className="titulo-seccion text-[1.75rem] md:text-[2rem]">
               Un papa argentino para el mundo
             </h3>
             <p className="mt-3 max-w-2xl font-light leading-relaxed">
-              Portadas. Diarios y revistas argentinas reflejan la elección del papa Francisco.
+              Realizó 47 viajes a 66 países.
             </p>
-          </div>
-          <div className="foto-libro mt-8 h-[min(52vh,32rem)]">
-            <img
-              src="/images/tapas-diarios-eleccion.jpg"
-              alt="Portadas de diarios y revistas argentinas el día de la elección del papa Francisco"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-          <figcaption className="mx-auto max-w-5xl px-4 py-4 text-sm">
-            Portadas. Diarios y revistas argentinas reflejan la elección del papa Francisco.
-            <span className="caption-en block">
-              Front pages. Argentine newspapers and magazines cover the election of Pope Francis.
-            </span>
-          </figcaption>
-        </figure>
-
-        <div className="bg-papel">
-          <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
-            <p className="font-display text-sm text-azul-petroleo">Realizó 47 viajes a 66 países</p>
             <div className="mt-8">
               <LineaTiempo
                 id="linea-papado"
@@ -198,6 +206,8 @@ export function SeccionBergoglio() {
           </ul>
         </div>
       </section>
+        </>
+      )}
     </section>
   );
 }
@@ -205,12 +215,27 @@ export function SeccionBergoglio() {
 export function SeccionTresArgentinos() {
   const dispatch = useDispatch();
   const featuredItems = useSelector((s) => s.people.featuredItems);
+  const featuredStatus = useSelector((s) => s.people.featuredStatus);
   const fromApi = useMemo(() => selectFeaturedForUi(featuredItems), [featuredItems]);
   const personas = fromApi?.length ? fromApi : ARGENTINOS_FAMOSOS;
+  const [vitralSrc, setVitralSrc] = useState("/images/argentinos-mas-famosos.webp");
+  const [vitralListo, setVitralListo] = useState(false);
+  const loading = isPublicLoading(featuredStatus) || !vitralListo;
 
   useEffect(() => {
     dispatch(fetchPublicFeatured());
   }, [dispatch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setVitralListo(false);
+    preloadUrls([vitralSrc]).then(() => {
+      if (!cancelled) setVitralListo(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vitralSrc]);
 
   return (
     <section>
@@ -220,45 +245,58 @@ export function SeccionTresArgentinos() {
         kicker="The most famous Argentines of all time"
       />
       <div className="mx-auto max-w-4xl px-4 py-12 md:py-20">
-        <figure>
-          <div className="foto-libro bg-papel [&_img]:h-auto [&_img]:object-contain">
-            <img
-              src="/images/argentinos-mas-famosos.webp"
-              alt="Vitral con Diego Maradona, el papa Francisco y Lionel Messi"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/images/argentinos-mas-famosos.jpg";
-              }}
-            />
-          </div>
-          <figcaption className="mt-3 text-sm">
-            Los argentinos más famosos de todos los tiempos.
-            <span className="caption-en block">The most famous Argentines of all time.</span>
-          </figcaption>
-        </figure>
-
-        <ul className="mt-10 space-y-6">
-          {personas.map((a) => (
-            <li
-              key={a.id || a.nombre}
-              className="reveal-scroll border-b border-azul-logo/15 pb-6 last:border-0"
-            >
-              <div className="flex gap-4">
-                {a.foto ? (
-                  <img
-                    src={a.foto}
-                    alt=""
-                    className="h-16 w-12 shrink-0 object-cover object-top"
-                  />
-                ) : null}
-                <div>
-                  <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
-                  <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
-                </div>
+        {loading ? (
+          <SectionLoader
+            texto="Cargando…"
+            hint="Preparando el folleto de los tres argentinos."
+          />
+        ) : (
+          <>
+            <figure>
+              <div className="foto-libro bg-papel [&_img]:h-auto [&_img]:object-contain">
+                <SoftImage
+                  src={vitralSrc}
+                  alt="Vitral con Diego Maradona, el papa Francisco y Lionel Messi"
+                  eager
+                  onError={() => {
+                    if (vitralSrc.endsWith(".webp")) {
+                      setVitralSrc("/images/argentinos-mas-famosos.jpg");
+                    }
+                  }}
+                />
               </div>
-            </li>
-          ))}
-        </ul>
+              <figcaption className="mt-3 text-sm">
+                Los argentinos más famosos de todos los tiempos.
+                <span className="caption-en block">The most famous Argentines of all time.</span>
+              </figcaption>
+            </figure>
+
+            <ul className="mt-10 space-y-6">
+              {personas.map((a) => (
+                <li
+                  key={a.id || a.nombre}
+                  className="reveal-scroll border-b border-azul-logo/15 pb-6 last:border-0"
+                >
+                  <div className="flex gap-4">
+                    {a.foto ? (
+                      <SoftImage
+                        src={a.foto}
+                        alt=""
+                        className="h-16 w-12 shrink-0"
+                        imgClassName="h-full w-full object-cover object-top"
+                        eager
+                      />
+                    ) : null}
+                    <div>
+                      <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
+                      <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </section>
   );
