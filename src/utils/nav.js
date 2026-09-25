@@ -56,12 +56,6 @@ export const NAV_LIBRO = [
     kicker: "El equipo",
     resumen: "Créditos, agradecimientos y ficha catalográfica.",
   },
-  {
-    to: "/el-libro",
-    label: "Tapa e ISBN",
-    kicker: "978-631-01-7027-5",
-    resumen: "Tapa, contratapa y datos de la edición.",
-  },
 ];
 
 export const NAV_TODAS = [...NAV_PRINCIPAL, ...NAV_LIBRO];

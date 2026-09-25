@@ -1,6 +1,6 @@
 import { SeccionAutor } from "../features/autor/SeccionAutor";
 import { SeccionBergoglio, SeccionTresArgentinos } from "../features/francisco/SeccionBergoglio";
-import { SeccionCreditos, SeccionTapa } from "../features/libro/SeccionCreditos";
+import { SeccionCreditos } from "../features/libro/SeccionCreditos";
 import { SeccionEscritores } from "../features/escritores/SeccionEscritores";
 import { SeccionGaleria } from "../features/galeria/SeccionGaleria";
 import { SeccionSantos } from "../features/santos/SeccionSantos";
@@ -36,8 +36,4 @@ export function PaginaVideo() {
 
 export function PaginaCreditos() {
   return <SeccionCreditos />;
-}
-
-export function PaginaTapa() {
-  return <SeccionTapa />;
 }

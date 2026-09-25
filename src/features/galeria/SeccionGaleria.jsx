@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { GaleriaModal } from "../../components/gallery/GaleriaModal";
@@ -75,6 +75,8 @@ export function SeccionGaleria() {
   const [lightbox, setLightbox] = useState(null);
   const [rotas, setRotas] = useState(() => new Set());
   const [indiceListo, setIndiceListo] = useState(false);
+  /** Evita borrar ?fiesta= en el refresh antes de resolver el deep-link */
+  const deepLinkListo = useRef(false);
 
   // Solo fiestas con portada real del API (sin homenaje al papa ni huecos vacíos)
   const conMedia = useMemo(
@@ -131,33 +133,53 @@ export function SeccionGaleria() {
     };
   }, [filtradas, activaId, cargandoFiestas]);
 
+  // Restaurar álbum desde ?fiesta= (después del API; el mock local no tiene fotos)
+  useEffect(() => {
+    const param = searchParams.get("fiesta");
+    if (!param) {
+      deepLinkListo.current = true;
+      return;
+    }
+    if (activaId) {
+      deepLinkListo.current = true;
+      return;
+    }
+    if (cargandoFiestas) return;
+
+    const match = FIESTAS.find(
+      (f) =>
+        String(f.id) === param ||
+        String(fiestaNumero(f)) === param ||
+        f.apiId === param,
+    );
+    if (match && !esHomenajePapa(match) && tieneFotosApi(match)) {
+      setActivaId(match.id);
+    }
+    deepLinkListo.current = true;
+  }, [FIESTAS, searchParams, cargandoFiestas, activaId]);
+
+  // Escribir filtros + ?fiesta= en la URL (sin pisar el deep-link al refrescar)
   useEffect(() => {
     const next = new URLSearchParams();
     if (q.trim()) next.set("q", q.trim());
     if (provincia !== "todas") next.set("provincia", provincia);
     if (mes !== "todos") next.set("mes", mes);
+
     if (activaId) {
       const f = FIESTAS.find((x) => x.id === activaId);
       if (f) next.set("fiesta", String(fiestaNumero(f) || f.id));
     } else {
-      // No borrar ?fiesta= mientras todavía no llegaron las celebraciones
       const pending = searchParams.get("fiesta");
-      if (pending && FIESTAS.length === 0) next.set("fiesta", pending);
+      // Conservar ?fiesta= hasta que el deep-link se resuelva (o falle tras el API)
+      if (pending && !deepLinkListo.current) {
+        next.set("fiesta", pending);
+      }
     }
+
     if (!paramsIguales(next, searchParams)) {
       setSearchParams(next, { replace: true });
     }
   }, [q, provincia, mes, activaId, FIESTAS, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    const param = searchParams.get("fiesta");
-    if (!param || !FIESTAS.length) return;
-    const match = FIESTAS.find(
-      (f) => String(f.id) === param || String(fiestaNumero(f)) === param || f.apiId === param,
-    );
-    if (match && tieneFotosApi(match) && !esHomenajePapa(match)) setActivaId(match.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [FIESTAS]);
 
   // Álbum: depende de activaId (estable) para no cancelar el fetch en loop
   useEffect(() => {
@@ -213,13 +235,17 @@ export function SeccionGaleria() {
     !activaId && (cargandoFiestas || (filtradas.length > 0 && !indiceListo));
   const mostrandoAlbumLoader =
     Boolean(activaId) && (cargandoAlbum || (fotosAlbum.length > 0 && !albumListo));
+  /** Refresh con ?fiesta=N: no mostrar el índice mientras resolvemos el álbum */
+  const abriendoDesdeUrl = Boolean(searchParams.get("fiesta")) && !activa;
 
   function elegirFiesta(f) {
+    deepLinkListo.current = true;
     setActivaId(f.id);
     setLightbox(null);
   }
 
   function volverIndice() {
+    deepLinkListo.current = true;
     setActivaId(null);
     setLightbox(null);
     setFotosAlbum([]);
@@ -257,7 +283,12 @@ export function SeccionGaleria() {
           ni abrir en otra pestaña.
         </p>
 
-        {!activa ? (
+        {abriendoDesdeUrl ? (
+          <SectionLoader
+            texto="Abriendo galería…"
+            hint="Recuperando las fotos de esta fiesta."
+          />
+        ) : !activa ? (
           <>
             <div className="galeria-filtros sticky top-16 z-30 mt-8 border border-azul-logo/15 bg-blanco/95 px-3 py-3 shadow-sm backdrop-blur-sm md:px-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

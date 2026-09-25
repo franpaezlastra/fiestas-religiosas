@@ -2,13 +2,17 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { socialService } from "../../services";
 import { shouldFetchPublic } from "../stale";
 
+function asList(payload) {
+  return Array.isArray(payload) ? payload : [];
+}
+
 export const fetchPublicSocial = createAsyncThunk(
   "social/fetchPublic",
   async (_, { rejectWithValue }) => {
     try {
-      return await socialService.publicList();
+      return asList(await socialService.publicList());
     } catch (error) {
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({ message: error.message, status: error.status });
     }
   },
   {
@@ -23,9 +27,9 @@ export const fetchAdminSocial = createAsyncThunk(
   "social/fetchAdmin",
   async (_, { rejectWithValue }) => {
     try {
-      return await socialService.adminList();
+      return asList(await socialService.adminList());
     } catch (error) {
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({ message: error.message, status: error.status });
     }
   },
 );
@@ -36,7 +40,7 @@ export const upsertSocial = createAsyncThunk(
     try {
       return await socialService.upsert(body);
     } catch (error) {
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({ message: error.message, status: error.status });
     }
   },
 );
@@ -48,7 +52,7 @@ export const removeSocial = createAsyncThunk(
       await socialService.remove(id);
       return id;
     } catch (error) {
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({ message: error.message, status: error.status });
     }
   },
 );
@@ -59,6 +63,7 @@ const socialSlice = createSlice({
     publicItems: [],
     adminItems: [],
     status: "idle",
+    adminStatus: "idle",
     lastFetchedAt: null,
     error: null,
   },
@@ -69,16 +74,26 @@ const socialSlice = createSlice({
         state.status = "loading";
       })
       .addCase(fetchPublicSocial.fulfilled, (state, action) => {
-        state.publicItems = action.payload;
+        state.publicItems = asList(action.payload);
         state.status = "succeeded";
         state.lastFetchedAt = Date.now();
+        state.error = null;
       })
       .addCase(fetchPublicSocial.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload?.message || null;
       })
+      .addCase(fetchAdminSocial.pending, (state) => {
+        state.adminStatus = "loading";
+      })
       .addCase(fetchAdminSocial.fulfilled, (state, action) => {
-        state.adminItems = action.payload;
+        state.adminItems = asList(action.payload);
+        state.adminStatus = "succeeded";
+        state.error = null;
+      })
+      .addCase(fetchAdminSocial.rejected, (state, action) => {
+        state.adminStatus = "failed";
+        state.error = action.payload?.message || null;
       })
       .addCase(upsertSocial.fulfilled, (state, action) => {
         const idx = state.adminItems.findIndex((s) => s.platform === action.payload.platform);

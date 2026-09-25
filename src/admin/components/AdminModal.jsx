@@ -5,6 +5,9 @@ import { useAdminConfirm } from "./AdminConfirm";
 /**
  * Modal admin: focus trap básico, Escape, footer sticky, overlay blur.
  * Si dirty=true, pide confirmación con AdminConfirm (nunca window.confirm).
+ *
+ * Importante: el auto-focus SOLO corre al abrir el modal. Si se re-ejecuta al
+ * cambiar dirty/onClose (cada tecla), el foco salta al primer input y no se puede escribir.
  */
 export function AdminModal({
   open,
@@ -19,10 +22,15 @@ export function AdminModal({
 }) {
   const panelRef = useRef(null);
   const firstFocusRef = useRef(null);
+  const dirtyRef = useRef(dirty);
+  const onCloseRef = useRef(onClose);
   const confirm = useAdminConfirm();
 
+  dirtyRef.current = dirty;
+  onCloseRef.current = onClose;
+
   async function requestClose() {
-    if (dirty) {
+    if (dirtyRef.current) {
       const ok = await confirm.ask({
         title: "Cambios sin guardar",
         message: "Hay cambios sin guardar. ¿Cerrar igual?",
@@ -31,17 +39,21 @@ export function AdminModal({
       });
       if (!ok) return;
     }
-    onClose?.();
+    onCloseRef.current?.();
   }
 
+  // Solo al abrir: body scroll lock + foco inicial (una vez)
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const t = window.setTimeout(() => {
       const root = panelRef.current;
       if (!root) return;
+      // Si el usuario ya está escribiendo en un campo, no robar el foco
+      if (root.contains(document.activeElement)) return;
       const focusable = root.querySelector(
         "input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [href]",
       );
@@ -81,8 +93,8 @@ export function AdminModal({
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keydown", onTab);
     };
-    // requestClose depends on dirty/onClose; re-bind when those change
-  }, [open, onClose, dirty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al abrir
+  }, [open]);
 
   if (!open) return null;
 

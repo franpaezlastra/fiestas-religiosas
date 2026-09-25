@@ -25,6 +25,11 @@ const ARG_MAX_BOUNDS = [
   [-40, -12],
 ];
 
+const ARG_VISTA = [
+  [-73.6, -55.3],
+  [-53.5, -21.7],
+];
+
 const CARD_W = 248;
 const CARD_H = 210;
 const PIN_GAP = 18;
@@ -32,6 +37,62 @@ const PIN_GAP = 18;
 function idsDe(activa) {
   if (activa == null) return [];
   return Array.isArray(activa) ? activa : [activa];
+}
+
+/** [[minLng,minLat],[maxLng,maxLat]] a partir de pines con lat/lng */
+function boundsDePines(pines) {
+  if (!pines?.length) return null;
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  for (const p of pines) {
+    if (p.lng == null || p.lat == null) continue;
+    minLng = Math.min(minLng, p.lng);
+    maxLng = Math.max(maxLng, p.lng);
+    minLat = Math.min(minLat, p.lat);
+    maxLat = Math.max(maxLat, p.lat);
+  }
+  if (!Number.isFinite(minLng)) return null;
+  if (minLng === maxLng) {
+    minLng -= 0.55;
+    maxLng += 0.55;
+  }
+  if (minLat === maxLat) {
+    minLat -= 0.45;
+    maxLat += 0.45;
+  }
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ];
+}
+
+function volarABounds(map, bounds, { maxZoom = 8.2 } = {}) {
+  if (!map || !bounds) return;
+  const padding = { top: 90, bottom: 90, left: 70, right: 70 };
+  try {
+    const cam =
+      typeof map.cameraForBounds === "function"
+        ? map.cameraForBounds(bounds, { padding, maxZoom })
+        : null;
+    if (cam && map.flyTo) {
+      map.flyTo({
+        center: cam.center,
+        zoom: cam.zoom,
+        bearing: cam.bearing ?? 0,
+        pitch: cam.pitch ?? 0,
+        essential: true,
+        curve: 1.65,
+        speed: 0.72,
+        maxDuration: 4200,
+      });
+      return;
+    }
+  } catch {
+    // fallback abajo
+  }
+  map.fitBounds?.(bounds, { padding, duration: 1600, maxZoom, essential: true });
 }
 
 function useFiestas() {
@@ -196,6 +257,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
   const [hoverId, setHoverId] = useState(null);
   const [cardLayout, setCardLayout] = useState(null);
   const leaveTimer = useRef(null);
+  const provinciaInicial = useRef(true);
 
   const PROVINCIAS = useMemo(() => provinciasDe(FIESTAS), [FIESTAS]);
   const haySeleccion = fiestaActiva != null;
@@ -325,6 +387,31 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
     });
   }, [FIESTAS, fiestaActiva]);
 
+  // Al elegir provincia: viaje hasta sus pines (o vista país si "todas")
+  useEffect(() => {
+    if (provinciaInicial.current) {
+      provinciaInicial.current = false;
+      return;
+    }
+    const mapInst = mapRef.current;
+    const map = mapInst?.getMap?.() ?? mapInst;
+    if (!map) return;
+
+    // Si la fiesta activa queda fuera del filtro, la soltamos
+    if (fiestaActiva != null && !filtradas.some((f) => f.id === fiestaActiva)) {
+      onActiva(null);
+    }
+
+    if (provincia === "todas" || provincia === "Argentina") {
+      volarABounds(map, ARG_VISTA, { maxZoom: 3.2 });
+      return;
+    }
+
+    const b = boundsDePines(pines);
+    if (b) volarABounds(map, b, { maxZoom: 8.5 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar provincia
+  }, [provincia]);
+
   function clearLeaveTimer() {
     if (leaveTimer.current) {
       clearTimeout(leaveTimer.current);
@@ -372,13 +459,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
   function verArgentina() {
     const mapInst = mapRef.current;
     const map = mapInst?.getMap?.() ?? mapInst;
-    map?.fitBounds?.(
-      [
-        [-73.6, -55.3],
-        [-53.5, -21.7],
-      ],
-      { padding: 100, duration: 800, maxZoom: 3.2 },
-    );
+    volarABounds(map, ARG_VISTA, { maxZoom: 3.2 });
   }
 
   return (

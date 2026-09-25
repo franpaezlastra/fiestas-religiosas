@@ -149,7 +149,8 @@ export function selectFeaturedForUi(featuredItems) {
       return {
         id: p.id,
         nombre: tr?.displayName || "Sin nombre",
-        rol: cleanLegacyTag(tr?.shortBio) || cleanLegacyTag(tr?.biography) || "",
+        rol: cleanLegacyTag(tr?.shortBio) || "",
+        bio: cleanLegacyTag(tr?.biography) || cleanLegacyTag(tr?.shortBio) || "",
         foto,
         source: "api",
       };

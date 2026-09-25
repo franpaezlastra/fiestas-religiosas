@@ -46,16 +46,37 @@ export function SeccionVideo() {
             <div className="mt-6 aspect-video w-full border border-dashed border-azul-logo/40 bg-papel" />
           </>
         ) : (
-          <div className="flex flex-col gap-8">
-            {published.map((video) => {
+          <div className="flex flex-col">
+            {published.map((video, index) => {
               const title =
                 video.translation?.title ||
                 video.translations?.find((t) => t.locale === "es")?.title ||
                 "Video";
+              const description =
+                video.translation?.description ||
+                video.translations?.find((t) => t.locale === "es")?.description ||
+                null;
               return (
-                <div key={video.id}>
+                <article key={video.id} className="reveal-scroll">
+                  {index > 0 ? (
+                    <div
+                      className="my-12 flex items-center gap-4 md:my-16"
+                      aria-hidden
+                    >
+                      <span className="h-px flex-1 bg-azul-logo/25" />
+                      <span className="font-display text-[10px] uppercase tracking-[0.2em] text-azul-logo/50">
+                        ·
+                      </span>
+                      <span className="h-px flex-1 bg-azul-logo/25" />
+                    </div>
+                  ) : null}
                   <h3 className="subtitulo-seccion">{title}</h3>
-                  <div className="mt-4 aspect-video w-full overflow-hidden bg-papel">
+                  {description ? (
+                    <p className="mt-3 font-light leading-relaxed text-azul-petroleo/80">
+                      {description}
+                    </p>
+                  ) : null}
+                  <div className="mt-5 aspect-video w-full overflow-hidden bg-papel shadow-[0_1px_0_rgb(65_93_130/0.12)]">
                     <iframe
                       title={title}
                       src={`https://www.youtube.com/embed/${video.externalId}`}
@@ -64,7 +85,7 @@ export function SeccionVideo() {
                       allowFullScreen
                     />
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>

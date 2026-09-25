@@ -289,7 +289,14 @@ export function SeccionTresArgentinos() {
                     ) : null}
                     <div>
                       <p className="font-display text-xl text-azul-petroleo">{a.nombre}</p>
-                      <p className="mt-2 text-sm font-light leading-relaxed">{a.rol}</p>
+                      {a.rol ? (
+                        <p className="mt-1 text-sm font-medium uppercase tracking-wide text-azul-logo">
+                          {a.rol}
+                        </p>
+                      ) : null}
+                      {a.bio ? (
+                        <p className="mt-2 text-sm font-light leading-relaxed">{a.bio}</p>
+                      ) : null}
                     </div>
                   </div>
                 </li>

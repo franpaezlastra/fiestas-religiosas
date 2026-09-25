@@ -16,6 +16,7 @@ import { AdminButton } from "../components/AdminButton";
 import { useAdminConfirm } from "../components/AdminConfirm";
 import { useAdminToast } from "../components/AdminToast";
 import { AdminModal, AdminModalActions } from "../components/AdminModal";
+import { AdminSortableList, nextDisplayOrder } from "../components/AdminSortableList";
 import { mediaUrl, thumbUrl } from "../utils/mediaUrl";
 import {
   AdminAlert,
@@ -286,6 +287,17 @@ export function AdminPeoplePage() {
 
   function buildScalarBody() {
     const nationality = form.nationalityCode.trim().toUpperCase();
+    const featuredItems = (Array.isArray(items) ? items : []).filter(
+      (p) => p.isFeatured || p.roles?.some((r) => r.role === "FEATURED_PERSON"),
+    );
+    let featuredOrder = null;
+    if (form.isFeatured) {
+      if (editingId && form.featuredDisplayOrder.trim() !== "") {
+        featuredOrder = Number(form.featuredDisplayOrder);
+      } else {
+        featuredOrder = nextDisplayOrder(featuredItems, "featuredDisplayOrder");
+      }
+    }
     return {
       firstName: form.firstName.trim() || null,
       lastName: form.lastName.trim() || null,
@@ -295,10 +307,7 @@ export function AdminPeoplePage() {
       status: form.status,
       translations: buildTranslations(form),
       isFeatured: Boolean(form.isFeatured),
-      featuredDisplayOrder:
-        form.featuredDisplayOrder.trim() !== ""
-          ? Number(form.featuredDisplayOrder)
-          : null,
+      featuredDisplayOrder: form.isFeatured ? featuredOrder : null,
       canonizationStage: form.canonizationStage || null,
     };
   }
@@ -762,14 +771,20 @@ export function AdminPeoplePage() {
                   <option value="ARCHIVED">Archivado</option>
                 </AdminSelect>
               </AdminField>
-              <AdminField label="Orden destacado" hint="featuredDisplayOrder">
-                <AdminInput
-                  type="number"
-                  min={0}
-                  value={form.featuredDisplayOrder}
-                  onChange={(e) => setField("featuredDisplayOrder", e.target.value)}
-                  placeholder="opcional"
-                />
+              <AdminField
+                label="Orden destacado"
+                hint="Se asigna solo si es destacada. Para cambiar el orden de imágenes, arrastrá abajo."
+              >
+                <p className="py-2 text-sm text-[var(--admin-text)]">
+                  {form.isFeatured
+                    ? form.featuredDisplayOrder.trim() !== ""
+                      ? form.featuredDisplayOrder
+                      : nextDisplayOrder(
+                          (Array.isArray(items) ? items : []).filter((p) => p.isFeatured),
+                          "featuredDisplayOrder",
+                        )
+                    : "—"}
+                </p>
               </AdminField>
               <div className="sm:col-span-2">
                 <AdminCheckbox
@@ -867,59 +882,62 @@ export function AdminPeoplePage() {
                     Todavía no hay imágenes asociadas.
                   </p>
                 ) : (
-                  <ul className="grid gap-3 sm:grid-cols-2">
-                    {personImages.map((img) => {
+                  <AdminSortableList
+                    items={personImages}
+                    getId={(img) => img.id || img.mediaId || img.media?.id}
+                    busy={imageBusy}
+                    empty="Todavía no hay imágenes asociadas."
+                    onReorder={(_ids, reordered) => {
+                      setPersonImages(
+                        reordered.map((img, index) => ({
+                          ...img,
+                          displayOrder: index,
+                          isPrimary: index === 0,
+                        })),
+                      );
+                      setImagesDirty(true);
+                    }}
+                    renderItem={(img) => {
                       const mid = img.mediaId || img.media?.id;
                       const src = mediaUrl(img) || thumbUrl(img);
                       return (
-                        <li
-                          key={img.id || mid}
-                          className="flex gap-3 border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3"
-                          style={{ borderRadius: "var(--radius-md)" }}
-                        >
+                        <div className="flex items-center gap-3">
                           {src ? (
                             <img
                               src={src}
                               alt=""
-                              className="h-12 w-12 shrink-0 object-cover"
-                              width={48}
-                              height={48}
+                              className="h-10 w-10 shrink-0 object-cover"
+                              width={40}
+                              height={40}
                               style={{ borderRadius: "var(--radius-sm)" }}
                             />
                           ) : (
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--admin-bg)] text-xs text-[var(--admin-text-muted)]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[var(--admin-bg)] text-xs text-[var(--admin-text-muted)]">
                               —
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              {img.isPrimary ? (
-                                <span className="border border-[var(--admin-border)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
-                                  Primaria
-                                </span>
-                              ) : null}
-                              {imageCaption(img) ? (
-                                <span className="truncate text-xs text-[var(--admin-text-muted)]">
-                                  {imageCaption(img)}
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="mt-2">
-                              <AdminButton
-                                variante="danger"
-                                tamano="sm"
-                                type="button"
-                                disabled={imageBusy}
-                                onClick={() => onRemoveImage(mid)}
-                              >
-                                Quitar
-                              </AdminButton>
-                            </div>
+                            <p className="truncate text-sm text-[var(--admin-text)]">
+                              {img.isPrimary ? "Primaria · " : ""}
+                              {imageCaption(img) || mid || "Imagen"}
+                            </p>
                           </div>
-                        </li>
+                          <AdminButton
+                            variante="danger"
+                            tamano="sm"
+                            type="button"
+                            disabled={imageBusy}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveImage(mid);
+                            }}
+                          >
+                            Quitar
+                          </AdminButton>
+                        </div>
                       );
-                    })}
-                  </ul>
+                    }}
+                  />
                 )}
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">

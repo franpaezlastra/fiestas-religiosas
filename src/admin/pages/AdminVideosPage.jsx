@@ -6,11 +6,13 @@ import {
   fetchAdminVideos,
   updateVideo,
 } from "../../redux/slices/videosSlice";
+import { videosService } from "../../services";
 import { useAdminPagination } from "../hooks/useAdminPagination";
 import { AdminButton } from "../components/AdminButton";
 import { useAdminConfirm } from "../components/AdminConfirm";
 import { useAdminToast } from "../components/AdminToast";
 import { AdminModal, AdminModalActions } from "../components/AdminModal";
+import { AdminSortableList, nextDisplayOrder } from "../components/AdminSortableList";
 import {
   AdminAlert,
   AdminBadge,
@@ -32,7 +34,6 @@ const empty = {
   externalId: "",
   title: "",
   description: "",
-  displayOrder: "0",
   status: "DRAFT",
   durationSeconds: "",
   sourcePublishedAt: "",
@@ -83,6 +84,8 @@ export function AdminVideosPage() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [modoOrdenar, setModoOrdenar] = useState(false);
+  const [reorderBusy, setReorderBusy] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAdminVideos());
@@ -101,6 +104,14 @@ export function AdminVideosPage() {
   }, []);
 
   const pager = useAdminPagination(statusFiltered, { filterFn });
+
+  const sortableItems = useMemo(
+    () =>
+      [...(Array.isArray(items) ? items : [])].sort(
+        (a, b) => (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999),
+      ),
+    [items],
+  );
 
   function setField(key, value) {
     setDirty(true);
@@ -122,7 +133,6 @@ export function AdminVideosPage() {
       externalId: item.externalId || "",
       title: tr?.title || "",
       description: tr?.description || "",
-      displayOrder: String(item.displayOrder ?? 0),
       status: item.status || "DRAFT",
       durationSeconds:
         item.durationSeconds != null ? String(item.durationSeconds) : "",
@@ -142,6 +152,22 @@ export function AdminVideosPage() {
     setDirty(false);
   }
 
+  async function onReorder(ids) {
+    setReorderBusy(true);
+    try {
+      await videosService.reorder(ids);
+      toast.push({ type: "success", message: "Orden de videos actualizado." });
+      dispatch(fetchAdminVideos());
+    } catch (err) {
+      toast.push({
+        type: "error",
+        message: err.message || "No se pudo reordenar",
+      });
+    } finally {
+      setReorderBusy(false);
+    }
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -156,12 +182,17 @@ export function AdminVideosPage() {
     const body = {
       provider: "YOUTUBE",
       externalId,
-      displayOrder: Number(form.displayOrder) || 0,
       status: form.status,
       translations: [
         { locale: "es", title: form.title, description: form.description || null },
       ],
     };
+    if (!editingId) {
+      body.displayOrder = nextDisplayOrder(sortableItems);
+    } else {
+      const current = items.find((v) => v.id === editingId);
+      body.displayOrder = current?.displayOrder ?? 0;
+    }
     if (form.durationSeconds.trim()) {
       body.durationSeconds = Number(form.durationSeconds) || null;
     } else if (editingId) {
@@ -228,6 +259,11 @@ export function AdminVideosPage() {
       ),
     },
     {
+      key: "order",
+      label: "Orden",
+      render: (row) => row.displayOrder ?? 0,
+    },
+    {
       key: "status",
       label: "Estado",
       render: (row) => <AdminBadge status={row.status} />,
@@ -248,16 +284,33 @@ export function AdminVideosPage() {
     },
   ];
 
+  const editingOrder =
+    editingId != null
+      ? items.find((v) => v.id === editingId)?.displayOrder
+      : nextDisplayOrder(sortableItems);
+
   return (
     <div>
       {confirm.dialog}
       <AdminPageHeader
         title="Videos"
-        subtitle="YouTube publicados en el sitio."
+        subtitle="YouTube publicados en el sitio. El orden se define arrastrando."
         actions={
-          <AdminButton tamano="sm" onClick={openCreate}>
-            + Nuevo video
-          </AdminButton>
+          <div className="flex flex-wrap gap-2">
+            <AdminButton
+              tamano="sm"
+              variante="secondary"
+              onClick={() => setModoOrdenar((v) => !v)}
+              disabled={!sortableItems.length}
+            >
+              {modoOrdenar ? "Salir" : "Reordenar"}
+            </AdminButton>
+            {!modoOrdenar ? (
+              <AdminButton tamano="sm" onClick={openCreate}>
+                + Nuevo video
+              </AdminButton>
+            ) : null}
+          </div>
         }
       />
 
@@ -265,41 +318,69 @@ export function AdminVideosPage() {
         <AdminStatCard label="Total videos" value={items.length} />
       </div>
 
-      <AdminToolbar
-        search={
-          <AdminSearch value={pager.query} onChange={pager.setQuery} placeholder="Buscar video…" />
-        }
-      >
-        <AdminSelect
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="Filtrar por estado"
-        >
-          <option value="">Todos</option>
-          <option value="PUBLISHED">Publicado</option>
-          <option value="DRAFT">Borrador</option>
-          <option value="ARCHIVED">Archivado</option>
-        </AdminSelect>
-      </AdminToolbar>
+      {modoOrdenar ? (
+        <div className="mb-6">
+          <p className="mb-3 text-sm text-[var(--admin-text-muted)]">
+            Arrastrá para cambiar el orden. Se guarda al soltar.
+          </p>
+          <AdminSortableList
+            items={sortableItems}
+            busy={reorderBusy}
+            empty="No hay videos para ordenar."
+            onReorder={onReorder}
+            renderItem={(item) => (
+              <div>
+                <p className="font-medium text-[var(--admin-text)]">{titleOf(item)}</p>
+                <p className="text-xs text-[var(--admin-text-muted)]">
+                  {item.externalId} · orden {item.displayOrder ?? "—"}
+                </p>
+              </div>
+            )}
+          />
+        </div>
+      ) : (
+        <>
+          <AdminToolbar
+            search={
+              <AdminSearch
+                value={pager.query}
+                onChange={pager.setQuery}
+                placeholder="Buscar video…"
+              />
+            }
+          >
+            <AdminSelect
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filtrar por estado"
+            >
+              <option value="">Todos</option>
+              <option value="PUBLISHED">Publicado</option>
+              <option value="DRAFT">Borrador</option>
+              <option value="ARCHIVED">Archivado</option>
+            </AdminSelect>
+          </AdminToolbar>
 
-      <AdminTable
-        columns={columns}
-        rows={pager.pageItems}
-        empty="Todavía no hay videos — creá el primero."
-        emptyAction={
-          <AdminButton tamano="sm" onClick={openCreate}>
-            + Nuevo video
-          </AdminButton>
-        }
-      />
-      <AdminPagination
-        page={pager.page}
-        totalPages={pager.totalPages}
-        from={pager.from}
-        to={pager.to}
-        total={pager.total}
-        onPageChange={pager.setPage}
-      />
+          <AdminTable
+            columns={columns}
+            rows={pager.pageItems}
+            empty="Todavía no hay videos — creá el primero."
+            emptyAction={
+              <AdminButton tamano="sm" onClick={openCreate}>
+                + Nuevo video
+              </AdminButton>
+            }
+          />
+          <AdminPagination
+            page={pager.page}
+            totalPages={pager.totalPages}
+            from={pager.from}
+            to={pager.to}
+            total={pager.total}
+            onPageChange={pager.setPage}
+          />
+        </>
+      )}
 
       <AdminModal
         open={modalOpen}
@@ -361,12 +442,13 @@ export function AdminVideosPage() {
                 onChange={(e) => setField("sourcePublishedAt", e.target.value)}
               />
             </AdminField>
-            <AdminField label="Orden">
-              <AdminInput
-                type="number"
-                value={form.displayOrder}
-                onChange={(e) => setField("displayOrder", e.target.value)}
-              />
+            <AdminField
+              label="Orden"
+              hint="Se asigna solo al crear. Cambialo con Reordenar en el listado."
+            >
+              <p className="py-2 text-sm text-[var(--admin-text)]">
+                {editingOrder ?? "—"}
+              </p>
             </AdminField>
             <AdminField label="Estado">
               <AdminSelect

@@ -21,7 +21,6 @@ const ROUTES = [
   "/escritores",
   "/creditos",
   "/tres-argentinos",
-  "/el-libro",
 ];
 
 function apiPath(url) {
