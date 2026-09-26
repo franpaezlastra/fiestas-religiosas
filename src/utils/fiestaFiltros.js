@@ -18,7 +18,7 @@ export const MES_NOMBRE = [
   "Diciembre",
 ];
 
-/** Tipos de pin del mapa (mapKind / schedule + mock local). */
+/** Tipos de pin del mapa (mapKind / schedule). */
 export const TIPOS_MAPA = [
   { id: "todos", label: "Todos" },
   { id: "fija", label: "Lugar puntual" },

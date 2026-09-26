@@ -1,8 +1,5 @@
-import { SANTOS_BEATOS } from "../data/santos";
 import { cleanLegacyTag, optimizeCloudinaryUrl } from "./celebrationsAdapter";
 import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
-
-const LOCAL_BY_ID = new Map(SANTOS_BEATOS.map((s) => [s.id, s]));
 
 const STAGE_TO_CATEGORIA = {
   SAINT: "santo",
@@ -60,9 +57,8 @@ export function personToSanto(person, index = 0) {
     person.translations?.[0];
   const book = personBookLink(person);
   const id = displayNumberOf(person, index);
-  const local = LOCAL_BY_ID.get(id);
 
-  let categoria = local?.categoria || "beato";
+  let categoria = "beato";
   if (person.canonizationStage && STAGE_TO_CATEGORIA[person.canonizationStage]) {
     categoria = STAGE_TO_CATEGORIA[person.canonizationStage];
   } else {
@@ -72,8 +68,7 @@ export function personToSanto(person, index = 0) {
 
   const birth = person.birthDate ? String(person.birthDate).slice(0, 4) : "";
   const death = person.deathDate ? String(person.deathDate).slice(0, 4) : "";
-  const anios =
-    birth && death ? `${birth}-${death}` : birth ? `${birth}-` : local?.anios || "";
+  const anios = birth && death ? `${birth}-${death}` : birth ? `${birth}-` : "";
 
   const shortBio = cleanLegacyTag(tr?.shortBio);
   const biography = cleanLegacyTag(tr?.biography);
@@ -81,12 +76,12 @@ export function personToSanto(person, index = 0) {
   return {
     id,
     apiId: person.id,
-    nombre: tr?.displayName || local?.nombre || "Sin nombre",
+    nombre: tr?.displayName || "Sin nombre",
     anios,
     categoria,
-    lugar: tr?.birthPlace || local?.lugar || "",
-    provincia: local?.provincia || "",
-    bio: biography || shortBio || local?.bio || "",
+    lugar: tr?.birthPlace || "",
+    provincia: "",
+    bio: biography || shortBio || "",
     bookId: book?.bookId || book?.book?.id || null,
     chapterNumber: book?.chapterNumber ?? null,
     pageReference: book?.pageReference || null,
@@ -164,9 +159,7 @@ export function selectFeaturedForUi(featuredItems) {
  */
 export function selectSantosForUi(publicItems, { fromHoliness = false } = {}) {
   const list = Array.isArray(publicItems) ? publicItems : [];
-  if (list.length === 0) {
-    return SANTOS_BEATOS.map((s) => ({ ...s, source: "local", apiId: null }));
-  }
+  if (list.length === 0) return [];
 
   const withoutFeatured = list.filter((p) => !isFeaturedOnly(p));
   const source = fromHoliness

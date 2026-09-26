@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ARGENTINOS_FAMOSOS } from "../../data/argentinos";
 import { LineaTiempo } from "../../components/timeline/LineaTiempo";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { SectionLoader } from "../../components/ui/SectionLoader";
@@ -217,7 +216,7 @@ export function SeccionTresArgentinos() {
   const featuredItems = useSelector((s) => s.people.featuredItems);
   const featuredStatus = useSelector((s) => s.people.featuredStatus);
   const fromApi = useMemo(() => selectFeaturedForUi(featuredItems), [featuredItems]);
-  const personas = fromApi?.length ? fromApi : ARGENTINOS_FAMOSOS;
+  const personas = fromApi?.length ? fromApi : [];
   const [vitralSrc, setVitralSrc] = useState("/images/argentinos-mas-famosos.webp");
   const [vitralListo, setVitralListo] = useState(false);
   const loading = isPublicLoading(featuredStatus) || !vitralListo;

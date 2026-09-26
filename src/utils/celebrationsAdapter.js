@@ -1,10 +1,6 @@
-import localFiestas from "../data/fiestas.json";
 import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
 
 const LEGACY_RE = /legacyId:(\d+)/i;
-
-/** Índice local por id para enriquecer campos que el API aún no tiene */
-const localById = new Map(localFiestas.map((f) => [f.id, f]));
 
 export function parseLegacyId(shortDescription) {
   const m = String(shortDescription || "").match(LEGACY_RE);
@@ -119,28 +115,24 @@ export function filterRealImages(rows) {
   return rows.filter((img) => !isPlaceholderImage(img));
 }
 
-function tipoFromSchedule(schedule, local) {
-  if (local?.tipo) return local.tipo;
+function tipoFromSchedule(schedule) {
   const t = schedule?.scheduleType;
   if (t === "FIXED_ANNUAL" || t === "ANNUAL_RANGE") return "fija";
-  if (t === "YEAR_ROUND") return local?.tipo === "nacional" ? "nacional" : "movil";
+  if (t === "YEAR_ROUND") return "movil";
   if (t === "VARIABLE_ANNUAL" || t === "ONE_TIME") return "movil";
   return "fija";
 }
 
-function mesFromSchedule(schedule, local) {
-  // Prioridad: schedule del API (startMonth / startDate), después mock local
+function mesFromSchedule(schedule) {
   if (schedule?.startMonth != null) return Number(schedule.startMonth);
   if (schedule?.startDate) {
     const d = new Date(schedule.startDate);
     if (!Number.isNaN(d.getTime())) return d.getUTCMonth() + 1;
   }
-  if (local?.mes != null) return local.mes;
   return null;
 }
 
-function fechaIsoFromSchedule(schedule, local) {
-  if (local?.fechaISO_referencia) return local.fechaISO_referencia;
+function fechaIsoFromSchedule(schedule) {
   if (schedule?.startMonth != null && schedule?.startDay != null) {
     return `--${String(schedule.startMonth).padStart(2, "0")}-${String(schedule.startDay).padStart(2, "0")}`;
   }
@@ -165,38 +157,29 @@ export function celebrationToFiesta(item) {
     (typeof item.displayOrder === "number" ? item.displayOrder : null) ??
     null;
 
-  // Mock local solo para campos que el API todavía no manda (región, tipo fino, etc.)
-  const legacyId = parseLegacyId(tr?.shortDescription);
-  const local =
-    (numero != null ? localById.get(Number(numero)) : null) ||
-    (legacyId != null ? localById.get(legacyId) : null) ||
-    null;
-
   const fotos = celebrationImageUrls(item, { maxWidth: 640 });
 
-  const capitulo =
-    book?.chapterNumber ?? item.bookChapter ?? local?.capitulo ?? null;
-  const paginas =
-    book?.pageReference ?? item.bookPages ?? local?.paginas ?? null;
+  const capitulo = book?.chapterNumber ?? item.bookChapter ?? null;
+  const paginas = book?.pageReference ?? item.bookPages ?? null;
 
   return {
     id: item.id,
     apiId: item.id,
     numero,
-    nombre: tr?.name || local?.nombre || "Sin nombre",
-    lugar: item.locality || item.placeName || local?.lugar || "",
-    provincia: item.province?.name || local?.provincia || "",
+    nombre: tr?.name || "Sin nombre",
+    lugar: item.locality || item.placeName || "",
+    provincia: item.province?.name || "",
     provinceId: item.province?.id || null,
-    region: item.region || local?.region || null,
-    fecha: scheduleTr?.dateDescription || local?.fecha || "",
-    fechaISO_referencia: fechaIsoFromSchedule(schedule, local),
-    mes: mesFromSchedule(schedule, local),
-    tipo: item.mapKind || tipoFromSchedule(schedule, local),
+    region: item.region || null,
+    fecha: scheduleTr?.dateDescription || "",
+    fechaISO_referencia: fechaIsoFromSchedule(schedule),
+    mes: mesFromSchedule(schedule),
+    tipo: item.mapKind || tipoFromSchedule(schedule),
     capitulo,
     paginas,
-    lat: item.latitude != null ? Number(item.latitude) : local?.lat ?? null,
-    lng: item.longitude != null ? Number(item.longitude) : local?.lng ?? null,
-    enLibro: item.inBook ?? (book != null ? true : local?.enLibro ?? true),
+    lat: item.latitude != null ? Number(item.latitude) : null,
+    lng: item.longitude != null ? Number(item.longitude) : null,
+    enLibro: item.inBook ?? (book != null ? true : true),
     showOnMap: item.showOnMap !== false,
     bookId: book?.bookId || book?.book?.id || null,
     fotos,
@@ -213,20 +196,8 @@ function sortByNumero(a, b) {
   return String(a.nombre).localeCompare(String(b.nombre), "es");
 }
 
-/**
- * Datos del mapa/calendario.
- * Prioridad: API pública. Mock local solo si la API viene vacía o falló.
- */
-export function selectFiestasForUi({ publicItems, localItems, source }) {
-  if (Array.isArray(publicItems) && publicItems.length > 0) {
-    return publicItems.map(celebrationToFiesta).sort(sortByNumero);
-  }
-  if (source === "api") return [];
-  return (localItems || localFiestas).map((f) => ({
-    ...f,
-    numero: f.id,
-    fotos: null,
-    apiId: null,
-    source: "local",
-  }));
+/** Datos del mapa/calendario: solo API pública (sin mock local). */
+export function selectFiestasForUi({ publicItems }) {
+  if (!Array.isArray(publicItems) || publicItems.length === 0) return [];
+  return publicItems.map(celebrationToFiesta).sort(sortByNumero);
 }

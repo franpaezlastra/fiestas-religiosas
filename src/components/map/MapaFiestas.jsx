@@ -5,7 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Link } from "react-router-dom";
 import { ESTILO_FISICO_POLITICO } from "../../utils/estiloMapa";
 import { capituloLabel, clusterFiestas, pinesSeparados } from "../../utils/geo";
-import { fotoPortada, fotosDe } from "../../utils/galeria";
+import { fotoPortada, tieneFotosApi } from "../../utils/galeria";
 import { fiestaNumero } from "../../utils/celebrationsAdapter";
 import {
   coincideFiltro,
@@ -120,7 +120,7 @@ function Detalle({ fiestas, onPick }) {
       {fiestas.map((f) => {
         const cap = capituloLabel(f.capitulo);
         const portada = fotoPortada(f);
-        const hayFotos = fotosDe(f).length > 0;
+        const hayFotos = tieneFotosApi(f);
         return (
           <li key={f.id} className="detalle-fiesta overflow-hidden border border-azul-logo/30">
             {portada ? (
@@ -209,7 +209,7 @@ function Pin({ fiesta, abierto, onClick, onEnter, onLeave }) {
 function FloatCard({ fiesta, style, onEnter, onLeave }) {
   if (!fiesta) return null;
   const portada = fotoPortada(fiesta);
-  const hayFotos = fotosDe(fiesta).length > 0;
+  const hayFotos = tieneFotosApi(fiesta);
 
   return (
     <div

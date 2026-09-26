@@ -1,4 +1,4 @@
-import { ANIOS_PAPADO, HITOS_ARGENTINA, HITOS_PAPADO } from "../data/bergoglio";
+import { ANIOS_PAPADO } from "../data/bergoglio";
 import { optimizeCloudinaryUrl } from "./celebrationsAdapter";
 import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
 
@@ -95,50 +95,20 @@ export function eventToHito(event, index = 0) {
   return hito;
 }
 
-/** Enriquece eventos API con foto local si el API aún no tiene images[]. */
-function mergeLocalFoto(apiHito, localHitos) {
-  if (apiHito.foto) return apiHito;
-  const local = localHitos.find(
-    (h) =>
-      h.titulo === apiHito.titulo ||
-      (h.anio === apiHito.anio && h.titulo?.slice(0, 12) === apiHito.titulo?.slice(0, 12)),
-  );
-  if (!local?.foto) return apiHito;
-  return {
-    ...apiHito,
-    foto: local.foto,
-    fotoAlt: local.fotoAlt,
-    fotoForma: local.fotoForma,
-    destacado: apiHito.destacado || local.destacado,
-  };
-}
-
 export function selectFranciscoTimelines(publicItems) {
   const list = Array.isArray(publicItems) ? publicItems : [];
   const argentina = list.find((t) => t.code === "FRANCISCO_ARGENTINA");
   const papado = list.find((t) => t.code === "FRANCISCO_PAPADO");
 
-  if (!argentina && !papado) {
-    return {
-      source: "local",
-      argentina: HITOS_ARGENTINA,
-      papado: HITOS_PAPADO,
-      aniosPapado: ANIOS_PAPADO,
-    };
-  }
-
-  const mapEvents = (tl, localFallback) =>
+  const mapEvents = (tl) =>
     [...(tl?.events || [])]
       .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-      .map((e, i) => mergeLocalFoto(eventToHito(e, i), localFallback));
-
-  const argentinaEvents = mapEvents(argentina, HITOS_ARGENTINA);
-  const papadoEvents = mapEvents(papado, HITOS_PAPADO);
+      .map((e, i) => eventToHito(e, i));
 
   return {
     source: "api",
-    argentina: argentinaEvents.length ? argentinaEvents : HITOS_ARGENTINA,
-    papado: papadoEvents.length ? papadoEvents : HITOS_PAPADO,
+    argentina: mapEvents(argentina),
+    papado: mapEvents(papado),
     aniosPapado: ANIOS_PAPADO,
   };
 }

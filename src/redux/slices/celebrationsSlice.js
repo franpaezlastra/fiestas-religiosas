@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import { celebrationsService } from "../../services";
-import localFiestas from "../../data/fiestas.json";
 import { shouldFetchPublic } from "../stale";
 import { selectFiestasForUi } from "../../utils/celebrationsAdapter";
 
@@ -71,14 +70,12 @@ const celebrationsSlice = createSlice({
   name: "celebrations",
   initialState: {
     publicItems: [],
-    /** Fallback estático del sitio mientras la API no tenga datos publicados */
-    localItems: localFiestas,
     adminItems: [],
     status: "idle",
     lastFetchedAt: null,
     adminStatus: "idle",
     error: null,
-    source: "local",
+    source: "api",
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -91,12 +88,12 @@ const celebrationsSlice = createSlice({
         state.status = "succeeded";
         state.lastFetchedAt = Date.now();
         state.publicItems = action.payload;
-        state.source = action.payload.length > 0 ? "api" : "local";
+        state.source = "api";
       })
       .addCase(fetchPublicCelebrations.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload?.message || "Error al cargar fiestas";
-        state.source = "local";
+        state.source = "api";
       })
       .addCase(fetchAdminCelebrations.pending, (state) => {
         state.adminStatus = "loading";
@@ -125,17 +122,14 @@ const celebrationsSlice = createSlice({
 
 export default celebrationsSlice.reducer;
 
-/** Fiestas listas para mapa/calendario (API o fallback local) — memoizado */
+/** Fiestas listas para mapa/calendario (solo API) — memoizado */
 export const selectCelebrationsState = (state) => state.celebrations;
 
 export const selectFiestasUi = createSelector([selectCelebrationsState], (c) =>
   selectFiestasForUi({
     publicItems: c.publicItems,
-    localItems: c.localItems,
-    source: c.source,
   }),
 );
 
 /** Re-export del adaptador puro (tests / uso sin store) */
 export { selectFiestasForUi } from "../../utils/celebrationsAdapter";
-
