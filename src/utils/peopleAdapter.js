@@ -1,5 +1,6 @@
 import { SANTOS_BEATOS } from "../data/santos";
 import { cleanLegacyTag, optimizeCloudinaryUrl } from "./celebrationsAdapter";
+import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
 
 const LOCAL_BY_ID = new Map(SANTOS_BEATOS.map((s) => [s.id, s]));
 
@@ -140,10 +141,9 @@ export function selectFeaturedForUi(featuredItems) {
       const img =
         p.images?.find((i) => i.isPrimary) || p.images?.[0] || p.primaryImage;
       const media = img?.media || img;
-      let foto = media?.url || null;
+      let foto = media?.url ? normalizeCloudinaryUrl(media.url) : null;
       if (!foto && media?.storageKey) {
-        const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
-        foto = `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
+        foto = cloudinaryUploadUrl(media.storageKey);
       }
       foto = optimizeCloudinaryUrl(foto, 480);
       return {

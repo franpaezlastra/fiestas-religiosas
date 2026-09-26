@@ -16,11 +16,12 @@ GitHub → **Settings → Secrets and variables → Actions → New repository s
 | `FTP_SERVER_DIR` | `/public_html/` |
 | `VITE_API_URL` | `https://api.fiestasreligiosas.com/api/v1` (dominio principal) |
 | `VITE_API_URL_PREVIEW` | `https://api-preview.fiestasreligiosas.com/api/v1` (subdominio `preview.`) |
-| `VITE_CLOUDINARY_CLOUD_NAME` | `duuwqmpmn` |
+| `VITE_CLOUDINARY_CLOUD_NAME` | `m6cqtqba` (producción) |
+| `VITE_CLOUDINARY_CLOUD_NAME_PREVIEW` | `duuwqmpmn` (solo `preview.*`; opcional si el default del código basta) |
 
 Local (`npm run dev`) usa el proxy → `api-preview.fiestasreligiosas.com`.
 
-`preview.fiestasreligiosas.com` y `fiestasreligiosas.com` comparten el mismo `dist/` en DonWeb: el front elige el API según el hostname (`apiClient.js`).
+`preview.fiestasreligiosas.com` y `fiestasreligiosas.com` comparten el mismo `dist/` en DonWeb: el front elige API y Cloudinary según el hostname (`apiClient.js` / `cloudinary.js`).
 
 ## Probar
 

@@ -1,4 +1,5 @@
 import localFiestas from "../data/fiestas.json";
+import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
 
 const LEGACY_RE = /legacyId:(\d+)/i;
 
@@ -66,11 +67,8 @@ function mediaUrl(image, { maxWidth } = {}) {
   if (!media) return null;
 
   let url = null;
-  if (media.url) url = media.url;
-  else if (media.storageKey) {
-    const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "duuwqmpmn";
-    url = `https://res.cloudinary.com/${cloud}/image/upload/${media.storageKey}`;
-  }
+  if (media.url) url = normalizeCloudinaryUrl(media.url);
+  else if (media.storageKey) url = cloudinaryUploadUrl(media.storageKey);
   if (!url) return null;
   return optimizeCloudinaryUrl(url, maxWidth);
 }
