@@ -174,31 +174,25 @@ export const booksService = {
 };
 
 export const socialService = {
-  // footer-links: evita adblockers que cortan paths con "social"
-  publicList: () => api("/public/footer-links"),
+  publicList: () => api("/public/social-links"),
   /** Admin y public comparten la misma tabla. Si admin 404, cae a public. */
   adminList: async () => {
     try {
-      const rows = await api("/admin/footer-links");
+      const rows = await api("/admin/social-links");
       return Array.isArray(rows) ? rows : [];
     } catch (err) {
       if (err.status !== 404) throw err;
-      try {
-        const rows = await api("/public/footer-links");
-        return Array.isArray(rows) ? rows : [];
-      } catch {
-        const rows = await api("/public/social-links");
-        return Array.isArray(rows) ? rows : [];
-      }
+      const rows = await api("/public/social-links");
+      return Array.isArray(rows) ? rows : [];
     }
   },
   upsert: (body) =>
-    api("/admin/footer-links", { method: "POST", body: JSON.stringify(body) }),
-  remove: (id) => api(`/admin/footer-links/${id}`, { method: "DELETE" }),
+    api("/admin/social-links", { method: "POST", body: JSON.stringify(body) }),
+  remove: (id) => api(`/admin/social-links/${id}`, { method: "DELETE" }),
   /** Preferí /reorder; si falta (404), dos fases vía upsert (displayOrder UNIQUE). */
   reorder: async (ids, items = []) => {
     try {
-      return await api("/admin/footer-links/reorder", {
+      return await api("/admin/social-links/reorder", {
         method: "PUT",
         body: JSON.stringify({ ids }),
       });
@@ -209,7 +203,7 @@ export const socialService = {
       if (ordered.length !== ids.length) throw err;
       const base = 10000;
       for (let i = 0; i < ordered.length; i += 1) {
-        await api("/admin/footer-links", {
+        await api("/admin/social-links", {
           method: "POST",
           body: JSON.stringify({
             platform: ordered[i].platform,
@@ -219,7 +213,7 @@ export const socialService = {
         });
       }
       for (let i = 0; i < ordered.length; i += 1) {
-        await api("/admin/footer-links", {
+        await api("/admin/social-links", {
           method: "POST",
           body: JSON.stringify({
             platform: ordered[i].platform,

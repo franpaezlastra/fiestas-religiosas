@@ -77,6 +77,8 @@ export function SeccionGaleria() {
   const [indiceListo, setIndiceListo] = useState(false);
   /** Evita borrar ?fiesta= en el refresh antes de resolver el deep-link */
   const deepLinkListo = useRef(false);
+  /** El usuario pidió el índice: no reabrir el álbum con el ?fiesta= que todavía está en la URL */
+  const cerrarAlbum = useRef(false);
 
   // Solo fiestas con portada real del API (sin homenaje al papa ni huecos vacíos)
   const conMedia = useMemo(
@@ -136,6 +138,10 @@ export function SeccionGaleria() {
   // Restaurar álbum desde ?fiesta= (después del API; el mock local no tiene fotos)
   useEffect(() => {
     const param = searchParams.get("fiesta");
+    if (cerrarAlbum.current) {
+      if (!param) cerrarAlbum.current = false;
+      return;
+    }
     if (!param) {
       deepLinkListo.current = true;
       return;
@@ -245,6 +251,7 @@ export function SeccionGaleria() {
   }
 
   function volverIndice() {
+    cerrarAlbum.current = true;
     deepLinkListo.current = true;
     setActivaId(null);
     setLightbox(null);

@@ -132,6 +132,7 @@ export function LineaTiempo({ id, variante, hitos, ejeAnios }) {
                 <SoftImage
                   src={h.foto}
                   alt={h.fotoAlt ?? ""}
+                  eager
                   className={`linea-foto-wrap${h.fotoForma === "logo" ? " is-logo" : ""}`}
                   imgClassName={`linea-foto${h.fotoForma === "logo" ? " is-logo" : ""}`}
                 />

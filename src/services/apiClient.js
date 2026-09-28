@@ -1,6 +1,6 @@
 /**
  * API por entorno:
- * - localhost → VITE_API_URL (proxy Vite → api-preview)
+ * - localhost → VITE_API_URL (proxy Vite → api.fiestasreligiosas.com)
  * - preview.fiestasreligiosas.com → api-preview (mismo build DonWeb que prod)
  * - fiestasreligiosas.com → VITE_API_URL de producción
  */

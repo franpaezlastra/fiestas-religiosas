@@ -30,19 +30,31 @@ export function personBookLink(person) {
   })[0];
 }
 
+function translationOf(person) {
+  return (
+    person?.translation ||
+    person?.translations?.find((t) => t.locale === "es") ||
+    person?.translations?.[0] ||
+    null
+  );
+}
+
+/** El seed dejó el nº del mapa al final del slug (`…-march-1`) cuando no hay bookAppearances. */
+function numberFromSlug(person) {
+  const slug = String(translationOf(person)?.slug || "");
+  const match = slug.match(/-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
 function displayNumberOf(person, index) {
   const book = personBookLink(person);
   if (book?.displayNumber != null) return Number(book.displayNumber);
   if (book?.mapNumber != null) return Number(book.mapNumber);
-  // No usar featuredDisplayOrder acá: eso es orden de /tres-argentinos, no del mapa de santos
-  if (person.roles?.[0]?.displayOrder != null) return Number(person.roles[0].displayOrder);
-  // Último recurso: tag de seed en shortBio (no debería usarse si el libro está linkeado)
-  const tr =
-    person.translation ||
-    person.translations?.find((t) => t.locale === "es") ||
-    person.translations?.[0];
-  const legacy = String(tr?.shortBio || "").match(/legacySantosId:(\d+)/i);
+  const fromSlug = numberFromSlug(person);
+  if (fromSlug != null) return fromSlug;
+  const legacy = String(translationOf(person)?.shortBio || "").match(/legacySantosId:(\d+)/i);
   if (legacy) return Number(legacy[1]);
+  if (person.roles?.[0]?.displayOrder != null) return Number(person.roles[0].displayOrder);
   return index + 1;
 }
 
@@ -51,10 +63,7 @@ function displayNumberOf(person, index) {
  * Número: bookAppearances.displayNumber (no shortBio).
  */
 export function personToSanto(person, index = 0) {
-  const tr =
-    person.translation ||
-    person.translations?.find((t) => t.locale === "es") ||
-    person.translations?.[0];
+  const tr = translationOf(person);
   const book = personBookLink(person);
   const id = displayNumberOf(person, index);
 

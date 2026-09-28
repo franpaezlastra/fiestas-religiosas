@@ -29,12 +29,39 @@ export const ESTILO_FISICO_POLITICO = {
 
       tileSize: 256,
       attribution: "Esri, HERE, Garmin"
+    },
+    provincias: {
+      type: "geojson",
+      data: "/geo/provincias.geojson",
+      attribution: "Límites provinciales © IGN / geoAr"
     }
   },
   layers: [
   { id: "fisico", type: "raster", source: "fisico", maxzoom: 7 },
   { id: "natgeo", type: "raster", source: "natgeo", minzoom: 6 },
-  { id: "limites", type: "raster", source: "limites", maxzoom: 7 }],
+  { id: "limites", type: "raster", source: "limites", maxzoom: 7 },
+  {
+    id: "provincias-halo",
+    type: "line",
+    source: "provincias",
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": "#f7f4ee",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 3, 2.6, 5, 3.8, 7, 5.2],
+      "line-opacity": 0.92
+    }
+  },
+  {
+    id: "provincias-borde",
+    type: "line",
+    source: "provincias",
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": "#415d82",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 3, 1.15, 5, 1.7, 7, 2.3],
+      "line-opacity": 0.95
+    }
+  }],
 
   glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf"
 };

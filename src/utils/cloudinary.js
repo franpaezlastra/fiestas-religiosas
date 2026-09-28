@@ -32,3 +32,17 @@ export function cloudinaryUploadUrl(storageKey) {
   if (/^https?:\/\//i.test(storageKey)) return normalizeCloudinaryUrl(storageKey);
   return `https://res.cloudinary.com/${cloudinaryCloudName()}/image/upload/${storageKey}`;
 }
+
+/** La otra cuenta de Cloudinary, si la URL apunta a una de las dos conocidas. */
+export function alternateCloudinaryUrl(url) {
+  if (!url || typeof url !== "string" || !url.includes("res.cloudinary.com")) return null;
+  const current = url.match(/res\.cloudinary\.com\/([^/]+)\//)?.[1];
+  if (!current) return null;
+  const other =
+    current === CLOUD_PROD ? CLOUD_PREVIEW : current === CLOUD_PREVIEW ? CLOUD_PROD : null;
+  if (!other) return null;
+  return url.replace(
+    /res\.cloudinary\.com\/[^/]+\//,
+    `res.cloudinary.com/${other}/`,
+  );
+}
