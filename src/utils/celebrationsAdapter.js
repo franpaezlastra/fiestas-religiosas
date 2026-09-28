@@ -1,4 +1,8 @@
+import localFiestas from "../data/fiestas.json";
 import { cloudinaryUploadUrl, normalizeCloudinaryUrl } from "./cloudinary";
+
+/** Tipo de pin de la referencia anterior (fija / movil / pendiente / nacional), por nº de fiesta. */
+const TIPO_POR_NUMERO = new Map(localFiestas.map((f) => [Number(f.id), f.tipo]));
 
 const LEGACY_RE = /legacyId:(\d+)/i;
 
@@ -115,11 +119,11 @@ export function filterRealImages(rows) {
   return rows.filter((img) => !isPlaceholderImage(img));
 }
 
-function tipoFromSchedule(schedule) {
-  const t = schedule?.scheduleType;
-  if (t === "FIXED_ANNUAL" || t === "ANNUAL_RANGE") return "fija";
-  if (t === "YEAR_ROUND") return "movil";
-  if (t === "VARIABLE_ANNUAL" || t === "ONE_TIME") return "movil";
+function tipoDeFiesta(numero) {
+  const tipo = numero != null ? TIPO_POR_NUMERO.get(Number(numero)) : null;
+  if (tipo === "fija" || tipo === "movil" || tipo === "pendiente" || tipo === "nacional") {
+    return tipo;
+  }
   return "fija";
 }
 
@@ -174,7 +178,7 @@ export function celebrationToFiesta(item) {
     fecha: scheduleTr?.dateDescription || "",
     fechaISO_referencia: fechaIsoFromSchedule(schedule),
     mes: mesFromSchedule(schedule),
-    tipo: item.mapKind || tipoFromSchedule(schedule),
+    tipo: tipoDeFiesta(numero),
     capitulo,
     paginas,
     lat: item.latitude != null ? Number(item.latitude) : null,

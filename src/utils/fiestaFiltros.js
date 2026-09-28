@@ -18,14 +18,42 @@ export const MES_NOMBRE = [
   "Diciembre",
 ];
 
-/** Tipos de pin del mapa (mapKind / schedule). */
+/** Leyenda del mapa (referencia anterior). */
 export const TIPOS_MAPA = [
   { id: "todos", label: "Todos" },
   { id: "fija", label: "Lugar puntual" },
   { id: "movil", label: "Fiesta móvil" },
+  { id: "pendiente", label: "Próxima a visitar" },
   { id: "nacional", label: "En todo el país" },
-  { id: "pendiente", label: "Próximas a visitar" },
 ];
+
+export const TIPO_LABEL = {
+  fija: "Lugar puntual",
+  movil: "Fiesta móvil",
+  pendiente: "Próxima a visitar",
+  nacional: "En todo el país",
+};
+
+export function clasePin(tipo) {
+  return (
+    {
+      movil: "is-movil",
+      pendiente: "is-pendiente",
+      nacional: "is-nacional",
+    }[tipo] || ""
+  );
+}
+
+/** Círculo de la lista, mismo criterio que el pin. */
+export function claseNumero(tipo) {
+  return (
+    {
+      movil: "border border-azul-petroleo bg-blanco text-azul-petroleo",
+      pendiente: "border border-dashed border-azul-petroleo bg-blanco text-azul-petroleo",
+      nacional: "bg-naranja-libro text-blanco",
+    }[tipo] || "bg-azul-petroleo text-blanco"
+  );
+}
 
 export function provinciasDe(fiestas) {
   return [

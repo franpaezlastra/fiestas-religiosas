@@ -200,6 +200,25 @@ select:focus-visible {
   z-index: 5;
 }
 
+.map-pin.is-movil {
+  background: #ffffff;
+  border-style: solid;
+  border-color: #033e60;
+  color: #033e60;
+}
+
+.map-pin.is-movil.is-open {
+  background: #0098d4;
+  border-color: #0098d4;
+  color: #ffffff;
+}
+
+.map-pin.is-nacional {
+  background: #d4762c;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
 .map-pin.is-beato {
   background: #c4a574;
   border-color: #ffffff;
@@ -742,7 +761,6 @@ select:focus-visible {
 .linea-hito .linea-marca,
 .linea-hito .linea-nodo {
   opacity: 0;
-  transform: translateY(2.5rem);
   animation: linea-con-scroll linear both;
   animation-timeline: view();
   animation-range: cover 0% cover 48%;
@@ -751,11 +769,9 @@ select:focus-visible {
 @keyframes linea-con-scroll {
   from {
     opacity: 0;
-    transform: translateY(2.75rem);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -829,13 +845,19 @@ select:focus-visible {
 .linea-foto-wrap {
   display: block;
   flex: none;
+  width: 7.5rem;
   max-width: 7.5rem;
+  overflow: hidden;
   background: color-mix(in srgb, #f7f3ec 80%, #415d82 8%);
 }
 
-.linea-foto-wrap > img {
+.linea-foto-wrap > img,
+.linea-foto-wrap.soft-image > img {
+  width: 100%;
+  height: auto;
   max-width: 7.5rem;
   max-height: 9rem;
+  object-fit: contain;
 }
 
 .linea-foto-wrap.is-logo {

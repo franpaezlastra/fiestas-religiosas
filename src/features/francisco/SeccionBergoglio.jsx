@@ -139,7 +139,6 @@ export function SeccionBergoglio() {
       <div id="argentina-1936" className="scroll-mt-28">
         <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
           <h3 className="titulo-seccion text-[1.75rem] md:text-[2rem]">Vida y acción pastoral</h3>
-          <p className="caption-en mt-1 text-sm">Life and pastoral work of Jorge Mario Bergoglio</p>
           <div className="mt-8">
             <LineaTiempo id="linea-argentina" variante="argentina" hitos={argentina} />
           </div>
@@ -266,7 +265,6 @@ export function SeccionTresArgentinos() {
               </div>
               <figcaption className="mt-3 text-sm">
                 Los argentinos más famosos de todos los tiempos.
-                <span className="caption-en block">The most famous Argentines of all time.</span>
               </figcaption>
             </figure>
 

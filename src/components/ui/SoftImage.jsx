@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { alternateCloudinaryUrl } from "../../utils/cloudinary";
 
 /**
@@ -13,6 +13,7 @@ export function SoftImage({
   eager = false,
   onError,
 }) {
+  const imgRef = useRef(null);
   const [currentSrc, setCurrentSrc] = useState(src);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -23,11 +24,17 @@ export function SoftImage({
     setFailed(false);
   }, [src]);
 
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el?.complete && el.naturalWidth > 0) setLoaded(true);
+  }, [currentSrc]);
+
   if (!currentSrc || failed) return null;
 
   return (
     <span className={`soft-image${loaded ? " is-loaded" : ""} ${className}`.trim()}>
       <img
+        ref={imgRef}
         src={currentSrc}
         alt={alt}
         loading={eager ? "eager" : "lazy"}

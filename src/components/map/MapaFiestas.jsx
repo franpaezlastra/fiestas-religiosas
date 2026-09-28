@@ -13,6 +13,9 @@ import {
   MES_NOMBRE,
   provinciasDe,
   TIPOS_MAPA,
+  TIPO_LABEL,
+  claseNumero,
+  clasePin,
 } from "../../utils/fiestaFiltros";
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { Boton } from "../../components/ui/Boton";
@@ -146,9 +149,9 @@ function Detalle({ fiestas, onPick }) {
                 {cap ? (
                   <span className="bg-azul-petroleo px-2 py-0.5 text-xs text-blanco">{cap}</span>
                 ) : null}
-                {f.tipo === "movil" ? (
-                  <span className="border border-dashed border-azul-petroleo px-2 py-0.5 text-xs">
-                    Fiesta móvil
+                {f.tipo && f.tipo !== "fija" && TIPO_LABEL[f.tipo] ? (
+                  <span className="border border-azul-petroleo px-2 py-0.5 text-xs">
+                    {TIPO_LABEL[f.tipo]}
                   </span>
                 ) : null}
                 {hayFotos ? (
@@ -178,8 +181,7 @@ function Pin({ fiesta, abierto, onClick, onEnter, onLeave }) {
   const cls = [
     "map-pin",
     abierto ? "is-open" : "",
-    fiesta.tipo === "movil" ? "is-movil" : "",
-    fiesta.tipo === "pendiente" ? "is-pendiente" : "",
+    clasePin(fiesta.tipo),
   ]
     .filter(Boolean)
     .join(" ");
@@ -621,11 +623,11 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
                 puntual
               </li>
               <li className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full border border-dashed border-azul-petroleo" />{" "}
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-azul-petroleo bg-blanco" />{" "}
                 Fiesta móvil
               </li>
               <li className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full border border-dashed border-azul-petroleo bg-transparent" />{" "}
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-dashed border-azul-petroleo bg-blanco" />{" "}
                 Próxima a visitar
               </li>
               <li className="flex items-center gap-1.5">
@@ -655,13 +657,7 @@ export function MapaFiestas({ fiestaActiva, onActiva }) {
                         }`}
                       >
                         <span
-                          className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
-                            f.tipo === "nacional"
-                              ? "bg-naranja-libro text-blanco"
-                              : f.tipo === "pendiente"
-                                ? "border border-dashed border-azul-petroleo text-azul-petroleo"
-                                : "bg-azul-petroleo text-blanco"
-                          }`}
+                          className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${claseNumero(f.tipo)}`}
                         >
                           {fiestaNumero(f)}
                         </span>

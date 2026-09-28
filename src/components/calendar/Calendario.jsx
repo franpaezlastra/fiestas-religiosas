@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fiestaNumero } from "../../utils/celebrationsAdapter";
+import { claseNumero } from "../../utils/fiestaFiltros";
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { SectionLoader } from "../ui/SectionLoader";
 import { isPublicLoading } from "../../utils/preload";
@@ -52,9 +53,6 @@ export function Calendario({ fiestaActiva, onActiva }) {
         <h3 className="titulo-seccion text-[1.75rem] md:text-[2rem]">
           Calendario de las fiestas populares
         </h3>
-        <p className="caption-en mt-1 text-sm">
-          Calendar of the popular Argentine festivals surveyed by the author
-        </p>
         <p className="mt-3 max-w-3xl font-light">
           Vista mes a mes, como en la página 30 del libro. Tocá una fiesta para resaltarla en el
           mapa.
@@ -101,13 +99,7 @@ export function Calendario({ fiestaActiva, onActiva }) {
                             </span>
                           </span>
                           <span
-                            className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
-                              f.tipo === "nacional"
-                                ? "bg-naranja-libro text-blanco"
-                                : f.tipo === "pendiente"
-                                  ? "border border-dashed border-azul-petroleo text-azul-petroleo"
-                                  : "bg-azul-petroleo text-blanco"
-                            }`}
+                            className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${claseNumero(f.tipo)}`}
                           >
                             {fiestaNumero(f)}
                           </span>
@@ -159,9 +151,6 @@ export function Calendario({ fiestaActiva, onActiva }) {
             <h4 className="font-display text-lg uppercase tracking-wide text-azul-petroleo">
               Otras fiestas importantes que intentaremos visitar
             </h4>
-            <p className="caption-en mt-1 text-sm">
-              Other important celebrations that we will attend
-            </p>
             <ul className="mt-4 grid gap-2 md:grid-cols-2">
               {pendientes.map((f) => (
                 <li key={f.id}>

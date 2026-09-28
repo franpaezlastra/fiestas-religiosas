@@ -7,6 +7,12 @@ import { fetchPublicPeople } from "../../redux/slices/peopleSlice";
 import { selectSantosForUi } from "../../utils/peopleAdapter";
 import { isPublicLoading, preloadUrls } from "../../utils/preload";
 
+const CATEGORIA_LABEL = {
+  santo: "Santo",
+  beato: "Beato",
+  siervo: "Siervo de Dios",
+};
+
 const SANTOS_IMGS = [
   "/images/santos-grupo-removebg-preview.png",
   "/images/mapa-santos.png",
@@ -61,9 +67,6 @@ export function SeccionSantos() {
               />
               <figcaption className="mt-3 text-sm">
                 Santos y beatos en Argentina. Los números coinciden con el mapa y las fichas.
-                <span className="caption-en block">
-                  Saints and blesseds in Argentina. Numbers match the map and the profiles.
-                </span>
               </figcaption>
             </figure>
 
@@ -77,10 +80,27 @@ export function SeccionSantos() {
                 />
                 <p className="mt-3 text-center text-sm">
                   Mapa de referencia. Cada número señala una ficha.
-                  <span className="caption-en block">
-                    Reference map. Each number matches a profile.
-                  </span>
                 </p>
+                <ul className="mt-4 flex flex-col gap-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-azul-petroleo text-[10px] text-blanco">
+                      1
+                    </span>
+                    Santo
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#c4a574] text-[10px] text-blanco">
+                      2
+                    </span>
+                    Beato
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-azul-petroleo text-[10px] text-azul-petroleo">
+                      3
+                    </span>
+                    Siervo de Dios
+                  </li>
+                </ul>
               </aside>
 
               <ol>
@@ -101,7 +121,11 @@ export function SeccionSantos() {
                       >
                         {s.id}
                       </span>
-                      {s.nombre} <span className="font-light">({s.anios})</span>
+                      {s.nombre}{" "}
+                      <span className="font-light">
+                        ({s.anios}
+                        {CATEGORIA_LABEL[s.categoria] ? ` · ${CATEGORIA_LABEL[s.categoria]}` : ""})
+                      </span>
                     </p>
                     <p className="mt-2 text-sm font-light leading-relaxed">{s.bio}</p>
                   </li>
