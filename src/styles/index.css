@@ -1066,3 +1066,156 @@ select:focus-visible {
   color: #033e60;
   box-shadow: inset 0 -2px 0 #0098d4;
 }
+
+/* ---------- Tienda ---------- */
+
+.campo-input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  border: 1px solid rgb(65 93 130 / 0.35);
+  background: #ffffff;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  font-size: 1rem;
+  color: #033e60;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.campo-input:hover {
+  border-color: #0098d4;
+}
+
+.campo-input:focus-visible {
+  outline: 2px solid #0098d4;
+  outline-offset: 1px;
+  border-color: #0098d4;
+}
+
+.campo-input[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.campo-error {
+  margin-top: 0.3rem;
+  font-size: 0.875rem;
+  color: #b42318;
+}
+
+.tienda-skeleton {
+  background: linear-gradient(90deg, #efe9df 0%, #f7f3ec 50%, #efe9df 100%);
+  background-size: 200% 100%;
+  animation: tienda-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes tienda-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tienda-skeleton {
+    animation: none;
+  }
+}
+
+.opcion-radio {
+  display: flex;
+  cursor: pointer;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid rgb(65 93 130 / 0.3);
+  background: #ffffff;
+  padding: 0.85rem 1rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.opcion-radio:hover {
+  border-color: #0098d4;
+}
+
+.opcion-radio:has(input:checked) {
+  border-color: #0098d4;
+  box-shadow: inset 0 0 0 1px #0098d4;
+  background: #f7f3ec;
+}
+
+.opcion-radio:has(input:focus-visible) {
+  outline: 2px solid #0098d4;
+  outline-offset: 2px;
+}
+
+.carrito-drawer {
+  animation: carrito-entra 220ms ease-out;
+}
+
+@keyframes carrito-entra {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carrito-drawer {
+    animation: none;
+  }
+}
+
+.estado-pedido {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.estado-pedido.is-ok {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.estado-pedido.is-error {
+  color: #b42318;
+  background: #fef3f2;
+}
+
+.estado-pedido.is-pendiente {
+  color: #a15c07;
+  background: #fffaeb;
+}
+
+.estado-pedido.is-info {
+  color: #033e60;
+  background: #f0f9ff;
+}
+
+/* Fotos enteras en cajas de alto fijo (tarjeta y detalle del mapa): sin recortar caras.
+   La foto se centra sobre el crema del sitio; las verticales quedan con márgenes a los costados. */
+.protected-image.is-encuadre {
+  background: #f7f3ec;
+}
+
+.protected-image.is-encuadre img,
+.map-float-card-img .protected-image.is-encuadre img,
+.detalle-fiesta .protected-image.is-encuadre img {
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+}
+
+.map-float-card-img {
+  height: 160px;
+}
+
+.detalle-fiesta-portada {
+  height: 220px;
+}

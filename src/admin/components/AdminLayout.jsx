@@ -13,8 +13,12 @@ const LINKS = [
   { to: "/admin/cronologias", label: "Cronologías", icon: "☰" },
   { to: "/admin/videos", label: "Videos", icon: "▶" },
   { to: "/admin/libros", label: "Libros", icon: "▤" },
+  { to: "/admin/novedades", label: "Novedades", icon: "✦" },
   { to: "/admin/redes", label: "Redes", icon: "☍" },
   { to: "/admin/media", label: "Imágenes", icon: "▣" },
+  { to: "/admin/pedidos", label: "Pedidos", icon: "✉" },
+  { to: "/admin/tienda", label: "Tienda", icon: "◫" },
+  { to: "/admin/comunidad", label: "Comunidad", icon: "✎" },
 ];
 
 const COLLAPSE_KEY = "fr-admin-sidebar-collapsed";

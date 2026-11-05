@@ -86,6 +86,7 @@ export function personToSanto(person, index = 0) {
     id,
     apiId: person.id,
     nombre: tr?.displayName || "Sin nombre",
+    slug: tr?.slug || null,
     anios,
     categoria,
     lugar: tr?.birthPlace || "",

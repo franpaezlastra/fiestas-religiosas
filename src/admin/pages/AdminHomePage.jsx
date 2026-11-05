@@ -9,6 +9,7 @@ import { fetchAdminVideos } from "../../redux/slices/videosSlice";
 import { fetchAdminBooks } from "../../redux/slices/booksSlice";
 import { fetchAdminSocial } from "../../redux/slices/socialSlice";
 import { fetchAdminMedia } from "../../redux/slices/mediaSlice";
+import { fetchCommunityStats } from "../../redux/slices/communityAdminSlice";
 
 const CARDS = [
   {
@@ -65,7 +66,10 @@ export function AdminHomePage() {
   const social = useSelector((s) => s.social.adminItems);
   const media = useSelector((s) => s.media.items);
 
+  const communityStats = useSelector((s) => s.communityAdmin.stats);
+
   useEffect(() => {
+    dispatch(fetchCommunityStats());
     dispatch(fetchAdminCelebrations());
     dispatch(fetchAdminPeople());
     dispatch(fetchAdminTimelines());
@@ -103,6 +107,25 @@ export function AdminHomePage() {
         <AdminStatCard label="Imágenes" value={counts.media} accent="naranja" />
         <AdminStatCard label="Personas" value={counts.people} accent="petroleo" />
       </div>
+
+      {communityStats ? (
+        <div className="mb-8 grid gap-3 sm:grid-cols-2">
+          <Link to="/admin/comunidad" className="block transition hover:-translate-y-0.5">
+            <AdminStatCard
+              label="Comunidad: publicaciones en revisión"
+              value={communityStats.pendingPosts}
+              hint={communityStats.pendingPosts ? "Revisar ahora →" : "Al día"}
+            />
+          </Link>
+          <Link to="/admin/comunidad?tab=denuncias" className="block transition hover:-translate-y-0.5">
+            <AdminStatCard
+              label="Comunidad: denuncias abiertas"
+              value={communityStats.openReports}
+              hint={communityStats.openReports ? "Ver denuncias →" : "Sin denuncias"}
+            />
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map((card) => (

@@ -5,6 +5,7 @@ import { GaleriaModal } from "../../components/gallery/GaleriaModal";
 import { ProtectedImage } from "../../components/gallery/ProtectedImage";
 import { Portadilla } from "../../components/ui/Portadilla";
 import { SectionLoader } from "../../components/ui/SectionLoader";
+import { BloqueComunidadFiesta } from "../../components/comunidad/BloqueComunidadFiesta";
 import { fetchPublicCelebrations, selectFiestasUi } from "../../redux/slices/celebrationsSlice";
 import { celebrationsService } from "../../services";
 import {
@@ -487,6 +488,8 @@ export function SeccionGaleria() {
             {!mostrandoAlbumLoader && !errorAlbum && fotosAlbum.length === 0 ? (
               <p className="mt-4 text-sm">Esta celebración aún no tiene fotos reales en la galería.</p>
             ) : null}
+
+            <BloqueComunidadFiesta slug={activa.slug} nombre={activa.nombre} />
           </div>
         )}
       </div>

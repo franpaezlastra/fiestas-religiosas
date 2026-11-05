@@ -29,9 +29,27 @@ export const NAV_PRINCIPAL = [
     kicker: "Fel, Travnik, Tarchini",
     resumen: "Biografías de Federico Lanati y de quienes editaron el libro.",
   },
+  {
+    to: "/tienda",
+    label: "Tienda",
+    kicker: "El libro",
+    resumen: "Comprá el libro con envío a todo el país por Andreani.",
+  },
+  {
+    to: "/comunidad",
+    label: "Comunidad",
+    kicker: "Peregrinos",
+    resumen: "Fotos y relatos de quienes vivieron las fiestas populares en todo el país.",
+  },
 ];
 
 export const NAV_LIBRO = [
+  {
+    to: "/novedades",
+    label: "Novedades",
+    kicker: "Presentaciones",
+    resumen: "Presentaciones, muestras y notas de prensa del libro.",
+  },
   {
     to: "/escritores",
     label: "Escritores",

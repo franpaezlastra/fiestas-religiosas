@@ -7,6 +7,7 @@ import { ESTILO_FISICO_POLITICO } from "../../utils/estiloMapa";
 import { capituloLabel, clusterFiestas, pinesSeparados } from "../../utils/geo";
 import { fotoPortada, tieneFotosApi } from "../../utils/galeria";
 import { fiestaNumero } from "../../utils/celebrationsAdapter";
+import { BloqueComunidadFiesta } from "../comunidad/BloqueComunidadFiesta";
 import {
   coincideFiltro,
   MESES,
@@ -128,7 +129,7 @@ function Detalle({ fiestas, onPick }) {
           <li key={f.id} className="detalle-fiesta overflow-hidden border border-azul-logo/30">
             {portada ? (
               <div className="detalle-fiesta-portada">
-                <ProtectedImage src={portada} alt="" className="h-full w-full" />
+                <ProtectedImage src={portada} alt="" fit="encuadre" className="h-full w-full" />
               </div>
             ) : null}
             <div className="p-3">
@@ -169,6 +170,7 @@ function Detalle({ fiestas, onPick }) {
                   </span>
                 )}
               </div>
+              <BloqueComunidadFiesta slug={f.slug} nombre={f.nombre} compacto />
             </div>
           </li>
         );
@@ -224,7 +226,7 @@ function FloatCard({ fiesta, style, onEnter, onLeave }) {
     >
       {portada ? (
         <div className="map-float-card-img">
-          <ProtectedImage src={portada} alt="" className="h-full w-full" />
+          <ProtectedImage src={portada} alt="" fit="encuadre" className="h-full w-full" />
         </div>
       ) : null}
       <div className="map-float-card-cuerpo">

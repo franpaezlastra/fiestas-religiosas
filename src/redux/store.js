@@ -8,6 +8,13 @@ import booksReducer from "./slices/booksSlice";
 import socialReducer from "./slices/socialSlice";
 import mediaReducer from "./slices/mediaSlice";
 import provincesReducer from "./slices/provincesSlice";
+import shopReducer from "./slices/shopSlice";
+import cartReducer, { saveCart } from "./slices/cartSlice";
+import ordersReducer from "./slices/ordersSlice";
+import userAuthReducer from "./slices/userAuthSlice";
+import communityReducer from "./slices/communitySlice";
+import communityAdminReducer from "./slices/communityAdminSlice";
+import novedadesReducer from "./slices/novedadesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +27,22 @@ export const store = configureStore({
     social: socialReducer,
     media: mediaReducer,
     provinces: provincesReducer,
+    shop: shopReducer,
+    cart: cartReducer,
+    orders: ordersReducer,
+    userAuth: userAuthReducer,
+    community: communityReducer,
+    communityAdmin: communityAdminReducer,
+    novedades: novedadesReducer,
   },
+});
+
+/* El carrito sobrevive a recargas: se guarda cada vez que cambian sus ítems. */
+let lastCartItems = store.getState().cart.items;
+store.subscribe(() => {
+  const items = store.getState().cart.items;
+  if (items !== lastCartItems) {
+    lastCartItems = items;
+    saveCart(items);
+  }
 });

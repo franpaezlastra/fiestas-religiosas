@@ -22,11 +22,15 @@ export function ProtectedImage({
   }
 
   const fitClass =
-    fit === "natural" ? "object-contain h-auto" : fit === "contain" ? "object-contain" : "object-cover";
+    fit === "natural"
+      ? "object-contain h-auto"
+      : fit === "contain" || fit === "encuadre"
+        ? "object-contain"
+        : "object-cover";
 
   return (
     <span
-      className={`protected-image ${fit === "natural" ? "is-natural" : ""} ${className}`.trim()}
+      className={`protected-image ${fit === "natural" ? "is-natural" : ""} ${fit === "encuadre" ? "is-encuadre" : ""} ${className}`.trim()}
       onContextMenu={block}
       onDragStart={block}
       role="img"

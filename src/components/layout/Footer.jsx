@@ -191,6 +191,37 @@ export function Footer() {
           <p className="mt-3 font-light">Editores: Juan Travnik y Gustavo Tarchini</p>
         </div>
       </div>
+      <div className="border-t border-blanco/15 px-4 py-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 text-xs font-light md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="font-display uppercase tracking-wide text-celeste-cielo">Datos del vendedor</p>
+            <p className="mt-1">[RAZÓN SOCIAL O NOMBRE] · CUIT [XX-XXXXXXXX-X]</p>
+            <p>[DIRECCIÓN] · [EMAIL DE CONTACTO] · [TELÉFONO]</p>
+          </div>
+          <nav aria-label="Legales" className="flex flex-col gap-2 md:items-end">
+            <Link
+              to="/arrepentimiento"
+              className="inline-flex w-fit border border-blanco/60 px-3 py-1.5 text-sm font-medium transition-colors duration-200 hover:border-celeste-cielo hover:text-celeste-cielo"
+            >
+              Botón de arrepentimiento
+            </Link>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <Link to="/terminos" className="hover:text-celeste-cielo">
+                Términos y condiciones
+              </Link>
+              <Link to="/cambios-y-devoluciones" className="hover:text-celeste-cielo">
+                Cambios y devoluciones
+              </Link>
+              <Link to="/comunidad/normas" className="hover:text-celeste-cielo">
+                Normas de la comunidad
+              </Link>
+              <Link to="/privacidad" className="hover:text-celeste-cielo">
+                Privacidad
+              </Link>
+            </div>
+          </nav>
+        </div>
+      </div>
       <p className="border-t border-blanco/15 px-4 py-4 text-center text-xs font-light">
         No se permite la reproducción total o parcial de este libro sin permiso escrito del editor.
       </p>

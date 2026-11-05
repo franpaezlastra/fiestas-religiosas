@@ -32,11 +32,14 @@ const authSlice = createSlice({
     admin: null,
     status: "idle",
     error: null,
+    /* code y status del último error de login, para mostrar un mensaje claro */
+    errorInfo: null,
     checked: false,
   },
   reducers: {
     clearAuthError(state) {
       state.error = null;
+      state.errorInfo = null;
     },
   },
   extraReducers: (builder) => {
@@ -53,6 +56,7 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload?.message || "No se pudo iniciar sesión";
+        state.errorInfo = action.payload || null;
         state.admin = null;
         state.checked = true;
       })

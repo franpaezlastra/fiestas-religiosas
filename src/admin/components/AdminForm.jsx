@@ -153,13 +153,21 @@ export function AdminAlert({ type = "info", children }) {
 }
 
 export function AdminBadge({ status }) {
-  const cls =
-    status === "PUBLISHED"
-      ? "admin-badge admin-badge--published"
-      : status === "ARCHIVED"
-        ? "admin-badge admin-badge--archived"
-        : "admin-badge admin-badge--draft";
-  const labels = { DRAFT: "Borrador", PUBLISHED: "Publicado", ARCHIVED: "Archivado" };
+  const cls = ["PUBLISHED", "ACTIVE"].includes(status)
+    ? "admin-badge admin-badge--published"
+    : ["ARCHIVED", "REJECTED", "REMOVED", "SUSPENDED"].includes(status)
+      ? "admin-badge admin-badge--archived"
+      : "admin-badge admin-badge--draft";
+  const labels = {
+    DRAFT: "Borrador",
+    PUBLISHED: "Publicado",
+    ARCHIVED: "Archivado",
+    PENDING: "En revisión",
+    REJECTED: "Rechazada",
+    REMOVED: "Dada de baja",
+    ACTIVE: "Activa",
+    SUSPENDED: "Suspendida",
+  };
   return <span className={cls}>{labels[status] || status}</span>;
 }
 

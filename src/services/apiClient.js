@@ -59,6 +59,34 @@ export async function api(path, options = {}) {
   return body?.data ?? body;
 }
 
+/**
+ * Subida con progreso (fetch no informa el avance del upload).
+ * Mismo base URL, cookies y formato de error que api().
+ */
+export function uploadWithProgress(path, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}${path}`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      let body = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        body = { error: { message: xhr.responseText } };
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body?.data ?? body);
+      else reject(new ApiError(body?.error || { message: xhr.statusText }, xhr.status));
+    };
+    xhr.onerror = () =>
+      reject(new ApiError({ code: "NETWORK_ERROR", message: "No hay conexión con el servidor." }, 0));
+    xhr.send(formData);
+  });
+}
+
 export async function uploadImages(files, metadata = {}) {
   const formData = new FormData();
   [...files].forEach((file) => formData.append("images", file));

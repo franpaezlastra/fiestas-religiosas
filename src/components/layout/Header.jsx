@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { NAV_LIBRO, NAV_PRINCIPAL } from "../../utils/nav";
 import { Logo } from "../../components/ui/Logo";
+import { CarritoIcono } from "./CarritoIcono";
+import { MenuUsuario } from "../comunidad/Cuenta";
 
 export function Header() {
   const { pathname } = useLocation();
@@ -46,6 +48,7 @@ export function Header() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Logo />
+        <div className="flex items-center gap-1 lg:gap-5">
         <nav className="hidden items-center gap-5 lg:flex">
           <NavLink to="/" end className={linkClass} onClick={cerrar}>
             Inicio
@@ -96,6 +99,8 @@ export function Header() {
             ) : null}
           </div>
         </nav>
+        <CarritoIcono />
+        <MenuUsuario />
         <button
           type="button"
           className="px-2 py-1 font-body text-sm lg:hidden"
@@ -105,6 +110,7 @@ export function Header() {
         >
           {menuAbierto ? "Cerrar" : "Menú"}
         </button>
+        </div>
       </div>
       {menuAbierto ? (
         <nav className="border-t border-azul-logo/15 bg-blanco px-4 py-4 text-azul-petroleo lg:hidden">

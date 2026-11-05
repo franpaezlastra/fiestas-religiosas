@@ -1,4 +1,40 @@
 import { api, uploadImages } from "./apiClient";
+import * as shopApi from "./shop/shopApi";
+import * as shopMock from "./shop/shopMock";
+import * as communityApi from "./community/communityApi";
+import * as communityMock from "./community/communityMock";
+import * as novedadesApi from "./novedades/novedadesApi";
+import * as novedadesMock from "./novedades/novedadesMock";
+
+/** VITE_USE_MOCKS=true → tienda simulada (sin backend). El resto del sitio no cambia. */
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
+const shop = USE_MOCKS ? shopMock : shopApi;
+
+export const shopService = shop.shopService;
+export const shippingService = shop.shippingService;
+export const ordersService = shop.ordersService;
+export const adminShopService = shop.adminShopService;
+export const adminOrdersService = shop.adminOrdersService;
+export const paymentSimulator = shop.paymentSimulator;
+export const mockControls = shop.mockControls;
+
+/** VITE_COMMUNITY_MOCKS=true → Comunidad simulada, independiente de la tienda. */
+export const COMMUNITY_MOCKS = import.meta.env.VITE_COMMUNITY_MOCKS === "true";
+const community = COMMUNITY_MOCKS ? communityMock : communityApi;
+
+export const userAuthService = community.userAuthService;
+export const meService = community.meService;
+export const communityService = community.communityService;
+export const communityAdminService = community.communityAdminService;
+export const communityMockControls = community.communityMockControls;
+
+/** VITE_NOVEDADES_MOCKS=true → Novedades del libro simuladas (presentaciones, muestras, prensa). */
+export const NOVEDADES_MOCKS = import.meta.env.VITE_NOVEDADES_MOCKS === "true";
+const novedades = NOVEDADES_MOCKS ? novedadesMock : novedadesApi;
+
+export const novedadesService = novedades.novedadesService;
+export const adminNovedadesService = novedades.adminNovedadesService;
+export const novedadesMockControls = novedades.novedadesMockControls;
 
 export const authService = {
   login: (email, password) =>
